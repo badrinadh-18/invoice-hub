@@ -86,6 +86,12 @@ function MobileBackButtonHandler() {
 }
 
 export default function App() {
+  // Pre-warm the backend API as soon as the app opens in the background
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://invoice-hub-t9jv.onrender.com/api/v1';
+    fetch(`${apiUrl}/health`).catch(() => {});
+  }, []);
+
   return (
     <BrowserRouter>
       <MobileBackButtonHandler />

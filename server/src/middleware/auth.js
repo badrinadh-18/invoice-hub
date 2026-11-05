@@ -12,6 +12,9 @@ export const authenticate = async (req, res, next) => {
     } else if (req.cookies && req.cookies.token) {
       // Check HttpOnly cookie
       token = req.cookies.token;
+    } else if (req.query && req.query.token) {
+      // Allow token in query param for file downloads (e.g. PDF generation)
+      token = req.query.token;
     }
 
     if (!token) {

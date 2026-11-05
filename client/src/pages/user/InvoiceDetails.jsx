@@ -23,6 +23,7 @@ import Modal from '../../components/common/Modal';
 import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PaymentModal from '../../components/invoices/PaymentModal';
+import { downloadInvoicePdf } from '../../utils/downloadPdf';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 
@@ -151,16 +152,15 @@ export default function InvoiceDetails() {
 
           {/* PDF Download */}
           {isIssued && (
-            <a
-              href={`${api.defaults.baseURL}/invoices/${invoice._id}/pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              variant="secondary"
+              icon={Download}
+              size="sm"
+              onClick={() => downloadInvoicePdf(invoice._id, invoice.invoiceNumber)}
               className="w-full sm:w-auto"
             >
-              <Button variant="secondary" icon={Download} size="sm" className="w-full sm:w-auto">
-                PDF
-              </Button>
-            </a>
+              PDF
+            </Button>
           )}
 
           {/* Record Payment */}

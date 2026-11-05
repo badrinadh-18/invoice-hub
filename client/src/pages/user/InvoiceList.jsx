@@ -23,6 +23,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import PaymentModal from '../../components/invoices/PaymentModal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { downloadInvoicePdf } from '../../utils/downloadPdf';
 import toast from 'react-hot-toast';
 
 export default function InvoiceList() {
@@ -220,15 +221,13 @@ export default function InvoiceList() {
 
                           {/* PDF download (only if issued) */}
                           {inv.lifecycleState === 'issued' && (
-                            <a
-                              href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
                               className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded-lg transition"
                               title="Download PDF"
                             >
                               <Download className="w-4 h-4" />
-                            </a>
+                            </button>
                           )}
 
                           {/* Record payment (only if issued and balance > 0) */}
@@ -333,15 +332,13 @@ export default function InvoiceList() {
                     </Link>
 
                     {inv.lifecycleState === 'issued' && (
-                      <a
-                        href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
                         className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition"
                         title="Download PDF"
                       >
                         <Download className="w-4 h-4" />
-                      </a>
+                      </button>
                     )}
 
                     {inv.lifecycleState === 'issued' && inv.balanceDue > 0 && (

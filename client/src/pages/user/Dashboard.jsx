@@ -34,6 +34,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { downloadInvoicePdf } from '../../utils/downloadPdf';
 
 const STATUS_COLORS = {
   paid: '#10B981', // emerald
@@ -340,15 +341,13 @@ export default function Dashboard() {
                             View
                           </Link>
                           {inv.lifecycleState === 'issued' && (
-                            <a
-                              href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
                               className="p-1 text-slate-400 hover:text-brand-700 transition"
                               title="Download PDF"
                             >
                               <Download className="w-4 h-4" />
-                            </a>
+                            </button>
                           )}
                         </div>
                       </td>
@@ -406,15 +405,13 @@ export default function Dashboard() {
                         View
                       </Link>
                       {inv.lifecycleState === 'issued' && (
-                        <a
-                          href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
                           className="p-1.5 text-slate-400 hover:text-brand-700 transition"
                           title="Download PDF"
                         >
                           <Download className="w-4 h-4" />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>

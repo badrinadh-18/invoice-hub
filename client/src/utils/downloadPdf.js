@@ -38,3 +38,4 @@ export const downloadInvoicePdf = async (invoiceId, invoiceNumber = 'invoice') =
     }
   }
 };
+

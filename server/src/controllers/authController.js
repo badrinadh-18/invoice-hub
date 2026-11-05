@@ -93,7 +93,7 @@ export const login = async (req, res, next) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      await logAuditEvent({
+      logAuditEvent({
         action: 'LOGIN_FAILED',
         targetType: 'User',
         targetId: user._id,
@@ -127,7 +127,8 @@ export const login = async (req, res, next) => {
       });
     }
 
-    await logAuditEvent({
+    // Log audit event asynchronously without blocking the response
+    logAuditEvent({
       actorId: user._id,
       actorEmail: user.email,
       actorRole: user.role,

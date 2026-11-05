@@ -1,0 +1,25 @@
+{
+  "name": "invoicehub",
+  "version": "1.0.0",
+  "description": "InvoiceHub — Multi-User Bill Management System",
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed",
+    "test": "npm --prefix server test",
+    "build": "npm --prefix client run build",
+    "cap:build": "npm --prefix client run cap:build",
+    "cap:android": "npm --prefix client run cap:android",
+    "start": "npm --prefix server start"
+  },
+  "keywords": [
+    "invoice",
+    "billing",
+    "multi-user",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC"
+}

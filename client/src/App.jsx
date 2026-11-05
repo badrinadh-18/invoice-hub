@@ -1,6 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import React, { useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Toaster, toast } from 'react-hot-toast';
+import { App as CapApp } from '@capacitor/app';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './routes/RouteGuards';
 
@@ -28,9 +29,66 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
+/**
+ * Handles Android Hardware & Gesture Back Button:
+ * - On inner pages: goes back to previously opened page without closing app.
+ * - On root/dashboard/login: requires double-tap to exit with a friendly prompt.
+ */
+function MobileBackButtonHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const lastPressRef = useRef(0);
+
+  useEffect(() => {
+    let listenerPromise;
+
+    try {
+      listenerPromise = CapApp.addListener('backButton', () => {
+        const path = location.pathname;
+        const isRootPage = path === '/' || path === '/dashboard' || path === '/login' || path === '/admin/dashboard';
+
+        if (isRootPage) {
+          const now = Date.now();
+          if (now - lastPressRef.current < 2000) {
+            CapApp.exitApp();
+          } else {
+            lastPressRef.current = now;
+            toast('Tap back again to exit', {
+              id: 'back-exit-toast',
+              duration: 2000,
+              icon: '👋',
+              style: {
+                background: '#0F172A',
+                color: '#fff',
+                fontSize: '12px',
+                borderRadius: '9999px',
+                padding: '8px 16px',
+              }
+            });
+          }
+        } else {
+          // Navigate to previous page!
+          navigate(-1);
+        }
+      });
+    } catch {
+      // Ignored if running in standard desktop web browser
+    }
+
+    return () => {
+      if (listenerPromise && typeof listenerPromise.then === 'function') {
+        listenerPromise.then((handle) => handle?.remove?.()).catch(() => {});
+      }
+    };
+  }, [location, navigate]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <MobileBackButtonHandler />
       <AuthProvider>
         <Toaster
           position="top-right"

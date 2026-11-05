@@ -115,70 +115,70 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Total Invoices */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Invoices</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Invoices</span>
             <FileText className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">{summary?.totalInvoices || 0}</p>
-          <span className="text-xs text-slate-500 mt-1 inline-block">
-            {summary?.draftCount || 0} drafts in progress
+          <p className="text-xl sm:text-2xl font-bold text-slate-900">{summary?.totalInvoices || 0}</p>
+          <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 inline-block truncate max-w-full">
+            {summary?.draftCount || 0} drafts
           </span>
         </div>
 
         {/* Total Invoiced */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Invoiced</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Invoiced</span>
             <TrendingUp className="w-4 h-4 text-brand-700" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
             {formatCurrency(summary?.totalInvoicedAmount || 0)}
           </p>
-          <span className="text-xs text-brand-700 font-medium mt-1 inline-block">
-            Excludes voided
+          <span className="text-[11px] sm:text-xs text-brand-700 font-medium mt-0.5 inline-block">
+            Net total
           </span>
         </div>
 
         {/* Amount Paid */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Collected</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Collected</span>
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-bold text-emerald-600">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600 truncate">
             {formatCurrency(summary?.totalAmountPaid || 0)}
           </p>
-          <span className="text-xs text-emerald-700 font-medium mt-1 inline-block">
-            Cleared payments
+          <span className="text-[11px] sm:text-xs text-emerald-700 font-medium mt-0.5 inline-block">
+            Cleared
           </span>
         </div>
 
         {/* Outstanding Balance */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Receivables</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Receivables</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-amber-600">
+          <p className="text-xl sm:text-2xl font-bold text-amber-600 truncate">
             {formatCurrency(summary?.outstandingBalance || 0)}
           </p>
-          <span className="text-xs text-slate-500 mt-1 inline-block">
+          <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 inline-block">
             Balance due
           </span>
         </div>
 
-        {/* Overdue */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Overdue</span>
+        {/* Overdue (Spans full width on 2-col mobile) */}
+        <div className="col-span-2 lg:col-span-1 bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Overdue</span>
             <AlertCircle className="w-4 h-4 text-rose-500" />
           </div>
-          <p className="text-2xl font-bold text-rose-600">{summary?.overdueCount || 0}</p>
-          <span className="text-xs text-rose-700 font-medium mt-1 inline-block">
-            Requires follow-up
+          <p className="text-xl sm:text-2xl font-bold text-rose-600">{summary?.overdueCount || 0}</p>
+          <span className="text-[11px] sm:text-xs text-rose-700 font-medium mt-0.5 inline-block">
+            Needs attention
           </span>
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Invoices Table */}
+      {/* Recent Invoices */}
       <Card
         title="Recent Invoices"
         subtitle="Your most recently generated invoices"
@@ -282,78 +282,145 @@ export default function Dashboard() {
             to="/invoices"
             className="text-xs font-semibold text-brand-700 hover:text-brand-900 inline-flex items-center gap-1"
           >
-            View All Invoices
+            View All
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         }
         noPadding
       >
         {recentInvoices.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50/70 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th className="px-5 py-3">Invoice Number</th>
-                  <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">Issue Date</th>
-                  <th className="px-5 py-3">Due Date</th>
-                  <th className="px-5 py-3 text-right">Grand Total</th>
-                  <th className="px-5 py-3 text-right">Balance Due</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentInvoices.map((inv) => (
-                  <tr key={inv._id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-5 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
-                      <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700">
-                        {inv.invoiceNumber}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-800 font-medium">
-                      {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
-                      {formatDate(inv.issueDate)}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
-                      {formatDate(inv.dueDate)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900 whitespace-nowrap">
-                      {formatCurrency(inv.grandTotal, inv.currency)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right font-medium text-amber-700 whitespace-nowrap">
-                      {formatCurrency(inv.balanceDue, inv.currency)}
-                    </td>
-                    <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                      <StatusBadge status={inv.paymentStatus} />
-                    </td>
-                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/invoices/${inv._id}`}
-                          className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition"
-                        >
-                          View
-                        </Link>
-                        {inv.lifecycleState === 'issued' && (
-                          <a
-                            href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 text-slate-400 hover:text-brand-700 transition"
-                            title="Download PDF"
-                          >
-                            <Download className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
+          <div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700">
+                <thead className="bg-slate-50/70 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-3">Invoice Number</th>
+                    <th className="px-5 py-3">Customer</th>
+                    <th className="px-5 py-3">Issue Date</th>
+                    <th className="px-5 py-3">Due Date</th>
+                    <th className="px-5 py-3 text-right">Grand Total</th>
+                    <th className="px-5 py-3 text-right">Balance Due</th>
+                    <th className="px-5 py-3 text-center">Status</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentInvoices.map((inv) => (
+                    <tr key={inv._id} className="hover:bg-slate-50/80 transition">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
+                        <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700">
+                          {inv.invoiceNumber}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-800 font-medium">
+                        {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                        {formatDate(inv.issueDate)}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                        {formatDate(inv.dueDate)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-slate-900 whitespace-nowrap">
+                        {formatCurrency(inv.grandTotal, inv.currency)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-medium text-amber-700 whitespace-nowrap">
+                        {formatCurrency(inv.balanceDue, inv.currency)}
+                      </td>
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                        <StatusBadge status={inv.paymentStatus} />
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/invoices/${inv._id}`}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition"
+                          >
+                            View
+                          </Link>
+                          {inv.lifecycleState === 'issued' && (
+                            <a
+                              href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1 text-slate-400 hover:text-brand-700 transition"
+                              title="Download PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View (Clean & Responsive) */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {recentInvoices.map((inv) => (
+                <div key={inv._id} className="p-3.5 hover:bg-slate-50/70 transition space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={`/invoices/${inv._id}`}
+                      className="font-bold text-sm text-brand-700"
+                    >
+                      {inv.invoiceNumber}
+                    </Link>
+                    <StatusBadge status={inv.paymentStatus} />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-800 truncate max-w-[60%]">
+                      {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                    </span>
+                    <span className="text-slate-500">
+                      Due: {formatDate(inv.dueDate)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <p className="text-xs text-slate-400">Total</p>
+                      <p className="font-bold text-sm text-slate-900">
+                        {formatCurrency(inv.grandTotal, inv.currency)}
+                      </p>
+                    </div>
+
+                    {inv.balanceDue > 0 && (
+                      <div className="text-right">
+                        <p className="text-xs text-amber-600">Balance</p>
+                        <p className="font-bold text-sm text-amber-700">
+                          {formatCurrency(inv.balanceDue, inv.currency)}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        to={`/invoices/${inv._id}`}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-md bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition"
+                      >
+                        View
+                      </Link>
+                      {inv.lifecycleState === 'issued' && (
+                        <a
+                          href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-slate-400 hover:text-brand-700 transition"
+                          title="Download PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="p-8">

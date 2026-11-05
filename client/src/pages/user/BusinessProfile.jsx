@@ -330,6 +330,7 @@ export default function BusinessProfile() {
             size="md"
             loading={saving}
             icon={Save}
+            className="w-full sm:w-auto"
           >
             Save Business Profile
           </Button>

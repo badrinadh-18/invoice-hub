@@ -154,11 +154,20 @@ export default function UserLayout() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+              aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-base font-semibold text-slate-800 hidden sm:block">
+            <Link to="/dashboard" className="md:hidden flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-brand-700 flex items-center justify-center text-white">
+                <Receipt className="w-4 h-4" />
+              </div>
+              <span className="font-bold text-sm text-slate-900 tracking-tight">
+                Invoice<span className="text-brand-700">Hub</span>
+              </span>
+            </Link>
+            <h1 className="text-base font-semibold text-slate-800 hidden md:block">
               InvoiceHub Workspace
             </h1>
           </div>
@@ -239,9 +248,71 @@ export default function UserLayout() {
         </header>
 
         {/* Page Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
           <Outlet />
         </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1.5 flex items-center justify-around">
+          <NavLink
+            to="/dashboard"
+            end
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
+                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+              }`
+            }
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/invoices"
+            end
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
+                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+              }`
+            }
+          >
+            <FileText className="w-5 h-5" />
+            <span>Invoices</span>
+          </NavLink>
+
+          {/* Quick Create Button in Center */}
+          <Link
+            to="/invoices/new"
+            aria-label="Create Invoice"
+            className="flex items-center justify-center w-11 h-11 -mt-4 rounded-full bg-brand-700 text-white shadow-md shadow-brand-700/30 hover:bg-brand-800 active:scale-95 transition"
+          >
+            <PlusCircle className="w-6 h-6" />
+          </Link>
+
+          <NavLink
+            to="/customers"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
+                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+              }`
+            }
+          >
+            <Users className="w-5 h-5" />
+            <span>Customers</span>
+          </NavLink>
+
+          <NavLink
+            to="/business-profile"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
+                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+              }`
+            }
+          >
+            <Building2 className="w-5 h-5" />
+            <span>Profile</span>
+          </NavLink>
+        </nav>
       </div>
     </div>
   );

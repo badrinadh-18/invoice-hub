@@ -166,7 +166,8 @@ export default function InvoiceList() {
           </div>
         ) : invoices.length > 0 ? (
           <div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-700">
                 <thead className="bg-slate-50/70 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                   <tr>
@@ -279,6 +280,110 @@ export default function InvoiceList() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {invoices.map((inv) => (
+                <div key={inv._id} className="p-3.5 space-y-2.5 hover:bg-slate-50/70 transition">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={`/invoices/${inv._id}`}
+                      className="font-bold text-sm text-brand-700 hover:underline flex items-center gap-1.5"
+                    >
+                      {inv.invoiceNumber}
+                    </Link>
+                    <StatusBadge status={inv.paymentStatus} />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-800 truncate max-w-[65%]">
+                      {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                    </span>
+                    <span className="text-slate-500">
+                      Due: {formatDate(inv.dueDate)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+                    <div>
+                      <p className="text-[11px] text-slate-400">Total</p>
+                      <p className="font-bold text-sm text-slate-900">
+                        {formatCurrency(inv.grandTotal, inv.currency)}
+                      </p>
+                    </div>
+
+                    {inv.balanceDue > 0 && (
+                      <div className="text-right">
+                        <p className="text-[11px] text-amber-600">Balance Due</p>
+                        <p className="font-bold text-sm text-amber-700">
+                          {formatCurrency(inv.balanceDue, inv.currency)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile Actions Toolbar */}
+                  <div className="flex items-center justify-end gap-1.5 pt-1">
+                    <Link
+                      to={`/invoices/${inv._id}`}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      View
+                    </Link>
+
+                    {inv.lifecycleState === 'issued' && (
+                      <a
+                        href={`${api.defaults.baseURL}/invoices/${inv._id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+                        title="Download PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    )}
+
+                    {inv.lifecycleState === 'issued' && inv.balanceDue > 0 && (
+                      <button
+                        onClick={() => setPaymentInvoice(inv)}
+                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        Pay
+                      </button>
+                    )}
+
+                    {inv.lifecycleState === 'draft' && (
+                      <Link
+                        to={`/invoices/${inv._id}/edit`}
+                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 border border-brand-200"
+                      >
+                        Edit
+                      </Link>
+                    )}
+
+                    {inv.lifecycleState === 'draft' && (
+                      <button
+                        onClick={() => setDeleteTarget(inv)}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {inv.lifecycleState === 'issued' && (
+                      <button
+                        onClick={() => setVoidTarget(inv)}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
+                        title="Void"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Pagination */}

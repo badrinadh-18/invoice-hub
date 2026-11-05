@@ -401,7 +401,8 @@ export default function InvoiceEditor() {
         }
         noPadding
       >
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700">
             <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
               <tr>
@@ -482,6 +483,101 @@ export default function InvoiceEditor() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Line Items Card View */}
+        <div className="md:hidden divide-y divide-slate-200">
+          {items.map((item, index) => {
+            const qty = Math.max(0, Number(item.quantity) || 0);
+            const price = Math.max(0, Number(item.unitPrice) || 0);
+            const lineTotal = round2(qty * price);
+
+            return (
+              <div key={index} className="p-3.5 space-y-3 bg-white">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase">
+                    Item #{index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    className="p-1 text-slate-400 hover:text-rose-600 transition"
+                    title="Remove Item"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                    Description *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={item.description}
+                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                    placeholder="e.g. Consulting, Design, Development"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1">
+                      Qty
+                    </label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="any"
+                      required
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-900 text-center focus:border-brand-700 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1">
+                      Unit Price
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      value={item.unitPrice}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-900 text-right focus:border-brand-700 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1">
+                      Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={item.taxRate}
+                      onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-900 text-right focus:border-brand-700 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <span className="text-slate-500 font-medium">Item Subtotal:</span>
+                  <span className="text-sm font-bold text-slate-900">
+                    {formatCurrency(lineTotal, currency)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Card>
 

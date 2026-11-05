@@ -143,9 +143,9 @@ export default function InvoiceDetails() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Print */}
-          <Button variant="secondary" icon={Printer} size="sm" onClick={handlePrint}>
+          <Button variant="secondary" icon={Printer} size="sm" onClick={handlePrint} className="w-full sm:w-auto">
             Print
           </Button>
 
@@ -155,8 +155,9 @@ export default function InvoiceDetails() {
               href={`${api.defaults.baseURL}/invoices/${invoice._id}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
+              className="w-full sm:w-auto"
             >
-              <Button variant="secondary" icon={Download} size="sm">
+              <Button variant="secondary" icon={Download} size="sm" className="w-full sm:w-auto">
                 PDF
               </Button>
             </a>
@@ -293,8 +294,8 @@ export default function InvoiceDetails() {
           </div>
         </div>
 
-        {/* Line Items Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop Line Items Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700">
             <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-y border-slate-200">
               <tr>
@@ -323,6 +324,26 @@ export default function InvoiceDetails() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Line Items View */}
+        <div className="md:hidden divide-y divide-slate-100 border-y border-slate-200">
+          {invoice.items?.map((item, index) => (
+            <div key={index} className="py-3 space-y-1">
+              <div className="flex justify-between items-start">
+                <span className="font-semibold text-sm text-slate-900">{item.description}</span>
+                <span className="font-bold text-sm text-slate-900">
+                  {formatCurrency(item.lineSubtotal, invoice.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>
+                  {item.quantity} × {formatCurrency(item.unitPrice, invoice.currency)}
+                </span>
+                {item.taxRate > 0 && <span>Tax: {item.taxRate}%</span>}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Totals Breakdown */}

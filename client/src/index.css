@@ -5,6 +5,8 @@
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900;
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

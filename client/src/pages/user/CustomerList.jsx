@@ -125,7 +125,8 @@ export default function CustomerList() {
           </div>
         ) : customers.length > 0 ? (
           <div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-700">
                 <thead className="bg-slate-50/70 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                   <tr>
@@ -192,6 +193,58 @@ export default function CustomerList() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {customers.map((c) => (
+                <div key={c._id} className="p-3.5 space-y-2 hover:bg-slate-50/70 transition">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900">{c.name}</h3>
+                      {c.taxId && (
+                        <p className="text-[11px] text-slate-400 font-mono">Tax ID: {c.taxId}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEdit(c)}
+                        className="p-1.5 text-slate-600 hover:text-brand-700 bg-slate-100 rounded-lg"
+                        title="Edit Customer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(c)}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 bg-slate-100 rounded-lg"
+                        title="Delete Customer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-600 pt-1">
+                    {c.email && (
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{c.email}</span>
+                      </div>
+                    )}
+                    {c.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{c.phone}</span>
+                      </div>
+                    )}
+                    {(c.city || c.country) && (
+                      <p className="text-[11px] text-slate-400 pt-0.5">
+                        📍 {[c.city, c.state, c.country].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Pagination */}

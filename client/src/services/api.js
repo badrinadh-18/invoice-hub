@@ -30,7 +30,7 @@ api.interceptors.response.use(
         localStorage.removeItem('invoicehub_token');
         localStorage.removeItem('invoicehub_user');
         if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && window.location.pathname !== '/') {
-          window.location.href = '/login?expired=1';
+          window.location.replace('/login?expired=1');
         }
       }
     }

@@ -15,6 +15,7 @@ import LandingPage from './pages/auth/LandingPage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 // User Pages
 import Dashboard from './pages/user/Dashboard';
@@ -142,7 +143,8 @@ export default function App() {
                 </PublicOnlyRoute>
               }
             />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
 
           {/* User Workspace Routes */}

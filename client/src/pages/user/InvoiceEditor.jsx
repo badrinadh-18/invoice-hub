@@ -5,12 +5,7 @@ import {
   Trash2,
   Save,
   Send,
-  ArrowLeft,
-  Building2,
-  Users,
-  AlertCircle,
-  Calendar,
-  DollarSign
+  ArrowLeft
 } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
@@ -28,8 +23,12 @@ export default function InvoiceEditor() {
   const [customers, setCustomers] = useState([]);
   const [businessProfile, setBusinessProfile] = useState(null);
 
-  // Form State
+  // Customer Direct Inputs
   const [customerId, setCustomerId] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+
+  // Dates & Financial State
   const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
@@ -41,8 +40,6 @@ export default function InvoiceEditor() {
   const [discountValue, setDiscountValue] = useState(0);
   const [overallTaxRate, setOverallTaxRate] = useState(0);
   const [additionalCharges, setAdditionalCharges] = useState(0);
-  const [notes, setNotes] = useState('');
-  const [terms, setTerms] = useState('');
 
   // Line items
   const [items, setItems] = useState([
@@ -55,18 +52,17 @@ export default function InvoiceEditor() {
       try {
         setLoading(true);
         const [custRes, profRes] = await Promise.all([
-          api.get('/customers?limit=100'),
-          api.get('/business-profile')
+          api.get('/customers?limit=100').catch(() => ({ data: { data: [] } })),
+          api.get('/business-profile').catch(() => ({ data: { data: null } }))
         ]);
 
-        setCustomers(custRes.data.data || []);
-        const profile = profRes.data.data;
+        const custList = custRes.data?.data || [];
+        setCustomers(custList);
+        const profile = profRes.data?.data;
         setBusinessProfile(profile);
 
         if (profile) {
           setCurrency(profile.defaultCurrency || 'INR');
-          setTerms(profile.defaultPaymentTerms || 'Net 15');
-          setNotes(profile.invoiceNotes || 'Thank you for your business!');
         }
 
         // If editing existing draft invoice
@@ -80,7 +76,14 @@ export default function InvoiceEditor() {
             return;
           }
 
-          setCustomerId(inv.customerId?._id || inv.customerId || '');
+          const existingCustId = inv.customerId?._id || inv.customerId || '';
+          setCustomerId(existingCustId);
+
+          const snap = inv.customerSnapshot || {};
+          const matchedCust = custList.find((c) => c._id === existingCustId);
+          setCustomerName(snap.name || matchedCust?.name || '');
+          setCustomerAddress(snap.billingAddress || matchedCust?.billingAddress || '');
+
           if (inv.issueDate) setIssueDate(new Date(inv.issueDate).toISOString().split('T')[0]);
           if (inv.dueDate) setDueDate(new Date(inv.dueDate).toISOString().split('T')[0]);
           setCurrency(inv.currency || 'INR');
@@ -88,8 +91,6 @@ export default function InvoiceEditor() {
           setDiscountValue(inv.discountValue || 0);
           setOverallTaxRate(inv.taxRate || 0);
           setAdditionalCharges(inv.additionalCharges || 0);
-          setNotes(inv.notes || '');
-          setTerms(inv.terms || '');
           if (inv.items && inv.items.length > 0) {
             setItems(inv.items.map((it) => ({
               description: it.description || '',
@@ -108,6 +109,22 @@ export default function InvoiceEditor() {
 
     initData();
   }, [id, navigate]);
+
+  // Handle direct customer name typing and auto-fill address if existing
+  const handleCustomerNameChange = (nameVal) => {
+    setCustomerName(nameVal);
+    const matched = customers.find(
+      (c) => c.name.toLowerCase() === nameVal.trim().toLowerCase()
+    );
+    if (matched) {
+      setCustomerId(matched._id);
+      if (matched.billingAddress && !customerAddress) {
+        setCustomerAddress(matched.billingAddress);
+      }
+    } else {
+      setCustomerId('');
+    }
+  };
 
   // Line item handlers
   const handleAddItem = () => {
@@ -177,8 +194,9 @@ export default function InvoiceEditor() {
 
   // Form submission (Save draft or Issue immediately)
   const handleSubmit = async (issueImmediately) => {
-    if (issueImmediately && !customerId) {
-      toast.error('Please select a customer before issuing the invoice.');
+    const trimmedName = customerName.trim();
+    if (!trimmedName) {
+      toast.error('Please enter the customer name.');
       return;
     }
 
@@ -190,8 +208,33 @@ export default function InvoiceEditor() {
 
     try {
       setSubmitting(true);
+
+      // Auto-resolve or auto-create customer by name
+      let resolvedCustomerId = customerId;
+      if (!resolvedCustomerId) {
+        const matched = customers.find(
+          (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (matched) {
+          resolvedCustomerId = matched._id;
+        } else {
+          // Seamlessly create the customer behind the scenes
+          try {
+            const newCustRes = await api.post('/customers', {
+              name: trimmedName,
+              billingAddress: customerAddress.trim()
+            });
+            if (newCustRes.data?.data?._id) {
+              resolvedCustomerId = newCustRes.data.data._id;
+            }
+          } catch (createErr) {
+            console.warn('Customer auto-create fallback:', createErr);
+          }
+        }
+      }
+
       const payload = {
-        customerId: customerId || undefined,
+        customerId: resolvedCustomerId || undefined,
         dueDate,
         currency,
         items: items.map((it) => ({
@@ -204,8 +247,6 @@ export default function InvoiceEditor() {
         discountValue: Number(discountValue) || 0,
         taxRate: Number(overallTaxRate) || 0,
         additionalCharges: Number(additionalCharges) || 0,
-        notes,
-        terms,
         issueImmediately
       };
 
@@ -256,7 +297,7 @@ export default function InvoiceEditor() {
               {id ? 'Edit Draft Invoice' : 'Create New Invoice'}
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
-              Fill in customer information, dynamic line items, and payment terms.
+              Enter customer details and dynamic line items.
             </p>
           </div>
         </div>
@@ -281,114 +322,72 @@ export default function InvoiceEditor() {
         </div>
       </div>
 
-      {/* Invoice Meta Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer & Dates (2 Cols) */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="Bill To Customer" subtitle="Select the client for this bill">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Customer *
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none bg-white"
-                  >
-                    <option value="">-- Choose an existing customer --</option>
-                    {customers.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} {c.email ? `(${c.email})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <Link to="/customers">
-                    <Button variant="secondary" size="md">
-                      + Add New
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Issue Date
-                  </label>
-                  <input
-                    type="date"
-                    value={issueDate}
-                    onChange={(e) => setIssueDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Payment Due Date *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
-                  />
-                </div>
-              </div>
+      {/* Customer & Dates Section */}
+      <Card title="Customer Information" subtitle="Enter customer name, address, and invoice dates">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Customer Name *
+              </label>
+              <input
+                type="text"
+                required
+                list="customer-suggestions"
+                value={customerName}
+                onChange={(e) => handleCustomerNameChange(e.target.value)}
+                placeholder="Type customer or company name..."
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              />
+              <datalist id="customer-suggestions">
+                {customers.map((c) => (
+                  <option key={c._id} value={c.name} />
+                ))}
+              </datalist>
             </div>
-          </Card>
-        </div>
 
-        {/* Currency & Seller Snapshot Info (1 Col) */}
-        <div>
-          <Card title="Billing Settings" subtitle="Currency and terms">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Currency
-                </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none bg-white font-medium"
-                >
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="CAD">CAD ($)</option>
-                  <option value="AUD">AUD ($)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Payment Terms
-                </label>
-                <input
-                  type="text"
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                  placeholder="e.g. Net 15, Due on Receipt"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <span className="font-semibold text-slate-700 block mb-0.5">Seller Branding:</span>
-                {businessProfile?.businessName ? (
-                  <p className="text-slate-600">{businessProfile.businessName}</p>
-                ) : (
-                  <p className="text-amber-700">No company profile configured. Please setup your profile in Settings.</p>
-                )}
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Customer Address
+              </label>
+              <input
+                type="text"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                placeholder="e.g. 123 Business Way, Suite 400, City, State"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              />
             </div>
-          </Card>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Issue Date
+              </label>
+              <input
+                type="date"
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Payment Due Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Dynamic Line Items Card */}
       <Card
@@ -581,112 +580,96 @@ export default function InvoiceEditor() {
         </div>
       </Card>
 
-      {/* Adjustments & Totals Breakdown Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Notes & Terms */}
-        <div className="space-y-4">
-          <Card title="Notes & Instructions" subtitle="Instructions for payment or wire transfer">
-            <textarea
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Please send payment to Account #... Thank you!"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
-            />
-          </Card>
-        </div>
+      {/* Financial Calculations Summary Card */}
+      <div className="max-w-xl ml-auto">
+        <Card title="Financial Calculations" subtitle="Server-authoritative calculation preview">
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between py-1 text-slate-600">
+              <span>Subtotal:</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(subtotal, currency)}</span>
+            </div>
 
-        {/* Financial Summary Box */}
-        <div>
-          <Card title="Financial Calculations" subtitle="Server-authoritative calculation preview">
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between py-1 text-slate-600">
-                <span>Subtotal:</span>
-                <span className="font-semibold text-slate-900">{formatCurrency(subtotal, currency)}</span>
-              </div>
-
-              {/* Discount inputs */}
-              <div className="flex items-center justify-between gap-3 py-1">
-                <span className="text-slate-600 text-xs">Discount:</span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={discountType}
-                    onChange={(e) => setDiscountType(e.target.value)}
-                    className="text-xs rounded border border-slate-300 py-1 px-2 bg-white"
-                  >
-                    <option value="percentage">% Pct</option>
-                    <option value="fixed">Fixed</option>
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
-                  />
-                  <span className="text-rose-600 font-medium text-xs w-24 text-right">
-                    -{formatCurrency(discountAmount, currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Overall Tax rate if items have 0% */}
-              {!hasItemTaxes && (
-                <div className="flex items-center justify-between gap-3 py-1">
-                  <span className="text-slate-600 text-xs">Tax Rate (%):</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      value={overallTaxRate}
-                      onChange={(e) => setOverallTaxRate(e.target.value)}
-                      className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
-                    />
-                    <span className="text-slate-800 font-medium text-xs w-24 text-right">
-                      +{formatCurrency(taxTotal, currency)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {hasItemTaxes && (
-                <div className="flex justify-between py-1 text-slate-600">
-                  <span>Itemized Tax Total:</span>
-                  <span className="font-semibold text-slate-900">+{formatCurrency(taxTotal, currency)}</span>
-                </div>
-              )}
-
-              {/* Additional Charges */}
-              <div className="flex items-center justify-between gap-3 py-1">
-                <span className="text-slate-600 text-xs">Other Charges / Shipping:</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={additionalCharges}
-                    onChange={(e) => setAdditionalCharges(e.target.value)}
-                    className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
-                  />
-                  <span className="text-slate-800 font-medium text-xs w-24 text-right">
-                    +{formatCurrency(numAdditional, currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Grand Total */}
-              <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
-                <span className="text-base font-bold text-slate-900">Grand Total:</span>
-                <span className="text-xl font-extrabold text-brand-700">
-                  {formatCurrency(grandTotal, currency)}
+            {/* Discount inputs */}
+            <div className="flex items-center justify-between gap-3 py-1">
+              <span className="text-slate-600 text-xs">Discount:</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value)}
+                  className="text-xs rounded border border-slate-300 py-1 px-2 bg-white"
+                >
+                  <option value="percentage">% Pct</option>
+                  <option value="fixed">Fixed</option>
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                  className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
+                />
+                <span className="text-rose-600 font-medium text-xs w-24 text-right">
+                  -{formatCurrency(discountAmount, currency)}
                 </span>
               </div>
             </div>
-          </Card>
-        </div>
+
+            {/* Overall Tax rate if items have 0% */}
+            {!hasItemTaxes && (
+              <div className="flex items-center justify-between gap-3 py-1">
+                <span className="text-slate-600 text-xs">Tax Rate (%):</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={overallTaxRate}
+                    onChange={(e) => setOverallTaxRate(e.target.value)}
+                    className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
+                  />
+                  <span className="text-slate-800 font-medium text-xs w-24 text-right">
+                    +{formatCurrency(taxTotal, currency)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {hasItemTaxes && (
+              <div className="flex justify-between py-1 text-slate-600">
+                <span>Itemized Tax Total:</span>
+                <span className="font-semibold text-slate-900">+{formatCurrency(taxTotal, currency)}</span>
+              </div>
+            )}
+
+            {/* Additional Charges */}
+            <div className="flex items-center justify-between gap-3 py-1">
+              <span className="text-slate-600 text-xs">Other Charges / Shipping:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={additionalCharges}
+                  onChange={(e) => setAdditionalCharges(e.target.value)}
+                  className="w-20 text-right text-xs rounded border border-slate-300 py-1 px-2"
+                />
+                <span className="text-slate-800 font-medium text-xs w-24 text-right">
+                  +{formatCurrency(numAdditional, currency)}
+                </span>
+              </div>
+            </div>
+
+            {/* Grand Total */}
+            <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+              <span className="text-base font-bold text-slate-900">Grand Total:</span>
+              <span className="text-xl font-extrabold text-brand-700">
+                {formatCurrency(grandTotal, currency)}
+              </span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Bottom Action Buttons */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Receipt, Info, ShieldAlert } from 'lucide-react';
+import { Mail, ArrowLeft, Receipt, Info } from 'lucide-react';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
 
@@ -55,12 +55,15 @@ export default function ForgotPassword() {
                 <p>{responseMsg}</p>
               </div>
 
-              <Link to="/login" className="block text-center">
-                <Button variant="secondary" className="w-full">
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setResponseMsg('')}>
                   <ArrowLeft className="w-4 h-4 mr-1" />
                   Return to Sign In
                 </Button>
-              </Link>
+                <Button variant="primary" className="flex-1" onClick={handleSubmit} loading={loading}>
+                  Resend Reset Link
+                </Button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">

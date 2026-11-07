@@ -4,24 +4,29 @@ import toast from 'react-hot-toast';
 /**
  * Downloads invoice PDF with full JWT authentication headers
  * and seamless fallback for mobile WebViews / Capacitor.
+ * The file is named using the customer's name and invoice number.
  */
 export const downloadInvoicePdf = async (invoiceId, invoiceNumber = 'invoice') => {
   const token = localStorage.getItem('invoicehub_token');
   const toastId = toast.loading('Generating invoice PDF...');
 
   try {
+    // First fetch invoice details to obtain the customer name
+    const invoiceRes = await api.get(`/invoices/${invoiceId}`);
+    const invoice = invoiceRes.data?.data || {};
+    const customerName = (invoice.customerSnapshot?.name || invoice.customerId?.name || 'Customer').replace(/\s+/g, '_');
+    const fileName = `${customerName}-${invoiceNumber}.pdf`;
+
     const res = await api.get(`/invoices/${invoiceId}/pdf`, {
       responseType: 'blob',
-      headers: {
-        Accept: 'application/pdf'
-      }
+      headers: { Accept: 'application/pdf' }
     });
 
     const blob = new Blob([res.data], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${invoiceNumber}.pdf`;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     link.remove();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FileText,
   PlusCircle,
@@ -427,7 +427,7 @@ export default function InvoiceList() {
                   setSearch('');
                   setStatusFilter('all');
                 } else {
-                  window.location.href = '/invoices/new';
+                  navigate('/invoices/new');
                 }
               }}
             />

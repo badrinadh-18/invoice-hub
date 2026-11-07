@@ -1,11 +1,14 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { User } from '../models/User.js';
+import { PasswordReset, hashToken } from '../models/PasswordReset.js';
 import { config } from '../config/env.js';
 import { logAuditEvent } from '../services/auditService.js';
+import { sendEmail } from '../services/emailService.js';
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn
+    expiresIn: config.jwtExpiresIn,
   });
 };
 
@@ -16,7 +19,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     expires: new Date(Date.now() + config.cookieMaxAge),
     httpOnly: true,
     secure: config.nodeEnv === 'production',
-    sameSite: config.nodeEnv === 'production' ? 'none' : 'lax'
+    sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
   };
 
   res.cookie('token', token, cookieOptions);
@@ -29,8 +32,8 @@ const sendTokenResponse = (user, statusCode, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      status: user.status
-    }
+      status: user.status,
+    },
   });
 };
 
@@ -44,20 +47,19 @@ export const register = async (req, res, next) => {
       return res.status(409).json({
         error: {
           code: 'EMAIL_ALREADY_EXISTS',
-          message: 'An account with this email address already exists.'
-        }
+          message: 'An account with this email address already exists.',
+        },
       });
     }
 
     const passwordHash = await User.hashPassword(password);
 
-    // Regular users are ALWAYS created with role 'user'
     const user = await User.create({
       name,
       email: normalizedEmail,
       passwordHash,
       role: 'user',
-      status: 'active'
+      status: 'active',
     });
 
     await logAuditEvent({
@@ -67,7 +69,7 @@ export const register = async (req, res, next) => {
       action: 'USER_REGISTERED',
       targetType: 'User',
       targetId: user._id,
-      ip: req.ip
+      ip: req.ip,
     });
 
     sendTokenResponse(user, 201, res);
@@ -86,8 +88,8 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         error: {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password.'
-        }
+          message: 'Invalid email or password.',
+        },
       });
     }
 
@@ -98,14 +100,14 @@ export const login = async (req, res, next) => {
         targetType: 'User',
         targetId: user._id,
         reason: 'Incorrect password',
-        ip: req.ip
+        ip: req.ip,
       });
 
       return res.status(401).json({
         error: {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password.'
-        }
+          message: 'Invalid email or password.',
+        },
       });
     }
 
@@ -113,8 +115,8 @@ export const login = async (req, res, next) => {
       return res.status(403).json({
         error: {
           code: 'ACCOUNT_SUSPENDED',
-          message: 'Your account is suspended. Please contact administrator support.'
-        }
+          message: 'Your account is suspended. Please contact administrator support.',
+        },
       });
     }
 
@@ -122,12 +124,11 @@ export const login = async (req, res, next) => {
       return res.status(403).json({
         error: {
           code: 'ACCOUNT_INACTIVE',
-          message: 'Your account is deactivated. Please contact support.'
-        }
+          message: 'Your account is deactivated. Please contact support.',
+        },
       });
     }
 
-    // Log audit event asynchronously without blocking the response
     logAuditEvent({
       actorId: user._id,
       actorEmail: user.email,
@@ -135,7 +136,7 @@ export const login = async (req, res, next) => {
       action: 'USER_LOGGED_IN',
       targetType: 'User',
       targetId: user._id,
-      ip: req.ip
+      ip: req.ip,
     });
 
     sendTokenResponse(user, 200, res);
@@ -147,12 +148,12 @@ export const login = async (req, res, next) => {
 export const logout = async (req, res) => {
   res.cookie('token', '', {
     httpOnly: true,
-    expires: new Date(0)
+    expires: new Date(0),
   });
 
   res.status(200).json({
     success: true,
-    message: 'Logged out successfully.'
+    message: 'Logged out successfully.',
   });
 };
 
@@ -165,15 +166,81 @@ export const getMe = async (req, res) => {
       email: req.user.email,
       role: req.user.role,
       status: req.user.status,
-      createdAt: req.user.createdAt
-    }
+      createdAt: req.user.createdAt,
+    },
   });
 };
 
 export const forgotPassword = async (req, res) => {
-  // Safe message conforming to requirement: if external email not configured, state clear status
-  res.status(200).json({
-    success: true,
-    message: 'If the provided email is registered, password reset instructions will be sent. (Note: Email service integration requires SMTP credentials; in development mode, please contact the administrator).'
-  });
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(200).json({ success: true, message: 'If the email exists, a reset link has been sent.' });
+    }
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(plainToken);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+    await PasswordReset.create({ userId: user._id, tokenHash, expiresAt, used: false });
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${plainToken}`;
+    const html = `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`;
+    await sendEmail(user.email, 'Password Reset', html);
+    return res.status(200).json({ success: true, message: 'If the email exists, a reset link has been sent.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
+  }
+};
+
+export const validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const tokenHash = hashToken(token);
+    const record = await PasswordReset.findOne({ tokenHash, used: false, expiresAt: { $gt: new Date() } });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+    }
+    return res.status(200).json({ success: true, message: 'Valid token.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to validate token.' });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required.' });
+    }
+    const tokenHash = hashToken(token);
+    const record = await PasswordReset.findOne({ tokenHash, used: false, expiresAt: { $gt: new Date() } });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+    }
+    const user = await User.findById(record.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    user.passwordHash = await User.hashPassword(password);
+    await user.save();
+    record.used = true;
+    await record.save();
+
+    await logAuditEvent({
+      actorId: user._id,
+      actorEmail: user.email,
+      actorRole: user.role,
+      action: 'PASSWORD_RESET_COMPLETED',
+      targetType: 'User',
+      targetId: user._id,
+      ip: req.ip,
+    });
+
+    return res.status(200).json({ success: true, message: 'Password has been reset successfully.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to reset password.' });
+  }
 };

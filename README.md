@@ -17,6 +17,7 @@ Multiple registered tenants can independently manage their businesses, customers
 - **Vector PDF Generation & Printing**: Clean server-side A4 invoice PDFs powered by PDFKit, plus a dedicated print stylesheet.
 - **Payment Tracking**: Record full or partial payments across Cash, Bank Transfer, UPI, Cards, and Cheques with automatic overpayment rejection.
 - **Analytics Dashboard**: Interactive KPI summary cards and Recharts monthly billing and invoice status distributions.
+- **Mobile Responsive & Hardware Back Handling**: Optimized for desktop and mobile, with seamless hardware back-button handling in the Android application.
 
 ### 🛡️ Administrator Governance
 - **System Overview**: Aggregate statistics for total registered users, issued invoices, and overall billing volume (excluding voided records).
@@ -31,8 +32,9 @@ Multiple registered tenants can independently manage their businesses, customers
 | Layer | Technologies |
 |---|---|
 | **Frontend** | React 19, Vite, Tailwind CSS 3, React Router DOM 7, Axios, Lucide React, Recharts, React Hot Toast |
-| **Backend** | Node.js (ES Modules), Express.js, Mongoose ODM, Zod, PDFKit, Helmet, Express Rate Limit, Cookie-Parser |
-| **Database** | MongoDB (Local or Atlas) |
+| **Mobile** | Capacitor 8 (Android runtime, native app navigation) |
+| **Backend** | Node.js (ES Modules), Express.js, Mongoose ODM, Zod, PDFKit, Helmet, Express Rate Limit, Cookie-Parser, Nodemailer |
+| **Database** | MongoDB (Local or MongoDB Atlas) |
 | **Authentication** | JWT (JSON Web Tokens), HttpOnly cookies / Bearer headers, Bcrypt password hashing |
 | **Testing** | Node.js Test Runner (`node:test`, `node:assert`) |
 
@@ -42,21 +44,19 @@ Multiple registered tenants can independently manage their businesses, customers
 
 ```text
 invoicehub/
-├── client/                      # React frontend
+├── client/                      # React frontend & Capacitor Android project
+│   ├── android/                 # Native Android Gradle project (Capacitor)
 │   ├── src/
-│   │   ├── components/          # Reusable UI cards, buttons, modals, badges
-│   │   │   ├── common/          # Button, Modal, Card, StatusBadge, EmptyState
-│   │   │   ├── customers/       # CustomerModal
-│   │   │   └── invoices/        # PaymentModal
+│   │   ├── components/          # Reusable UI cards, modals, tables, badges
 │   │   ├── context/             # AuthContext (token persistence, user state)
 │   │   ├── layouts/             # PublicLayout, UserLayout, AdminLayout
 │   │   ├── pages/
-│   │   │   ├── auth/            # LandingPage, Login, Register, ForgotPassword
+│   │   │   ├── auth/            # LandingPage, Login, Register, ForgotPassword, ResetPassword
 │   │   │   ├── user/            # Dashboard, BusinessProfile, CustomerList, InvoiceList, InvoiceEditor, InvoiceDetails
 │   │   │   └── admin/           # AdminDashboard, AdminUsers, AdminAuditLogs
 │   │   ├── routes/              # RouteGuards (ProtectedRoute, AdminRoute, PublicOnlyRoute)
 │   │   ├── services/            # Axios API client with interceptors
-│   │   └── utils/               # Formatters (currency, dates, badges)
+│   │   └── utils/               # Formatters (currency, dates, badges, PDF download)
 │   ├── package.json
 │   └── vite.config.js
 ├── server/                      # Express.js REST API
@@ -64,80 +64,112 @@ invoicehub/
 │   │   ├── config/              # MongoDB connection & environment settings
 │   │   ├── controllers/         # Auth, User, BusinessProfile, Customer, Invoice, Payment, Dashboard, Admin
 │   │   ├── middleware/          # JWT auth, RBAC role guard, Zod request validator, error handler
-│   │   ├── models/              # User, Customer, BusinessProfile, Invoice, Payment, AuditLog
+│   │   ├── models/              # User, Customer, BusinessProfile, Invoice, Payment, AuditLog, PasswordReset
 │   │   ├── routes/              # Express API routers prefixed with /api/v1
-│   │   ├── services/            # PDF generation service, Audit logging service
-│   │   ├── utils/               # Calculation engine, Seed script, Live verification
-│   │   ├── validators/          # Zod request validation schemas
-│   │   ├── app.js               # Express application configuration
-│   │   └── server.js            # Server entrypoint
-│   ├── tests/                   # Calculation unit tests & Critical Security isolation tests
+│   │   ├── services/            # PDF generation, Audit logging, Email service (Nodemailer)
+│   │   └── utils/               # Calculation engine, Seed script
+│   ├── tests/                   # Automated security & calculation tests
 │   └── package.json
-├── package.json                 # Root script runner
-├── .env.example                 # Environment variables template
+├── .env.example                 # Environment template
 └── README.md
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quickstart & Local Setup
 
 ### 1. Prerequisites
-- **Node.js**: v18+ (tested on Node v26)
-- **MongoDB**: Local MongoDB instance (`mongodb://127.0.0.1:27017`) or MongoDB Atlas connection string.
+- Node.js >= 18.0.0
+- MongoDB instance (local or MongoDB Atlas connection URI)
+- npm or pnpm
 
 ### 2. Environment Configuration
-Copy `.env.example` to `server/.env` and `client/.env`:
-
+Copy `.env.example` to `server/.env`:
 ```bash
-# Server Configuration (server/.env)
-PORT=5001
-NODE_ENV=development
-MONGODB_URI=mongodb://127.0.0.1:27017/invoicehub
-MONGODB_TEST_URI=mongodb://127.0.0.1:27017/invoicehub_test
-CORS_ORIGIN=http://localhost:5173
-JWT_SECRET=your_jwt_secret_key_change_in_production
-JWT_EXPIRES_IN=7d
-
-# Initial Admin Credentials (used during seed)
-ADMIN_NAME=System Administrator
-ADMIN_EMAIL=admin@invoicehub.local
-ADMIN_PASSWORD=Admin@InvoiceHub2026
-
-# Client Configuration (client/.env)
-VITE_API_URL=http://localhost:5001/api/v1
+cp .env.example server/.env
 ```
+
+Ensure `JWT_SECRET`, `PORT`, and `MONGODB_URI` are configured.
 
 ### 3. Install Dependencies
 ```bash
-# Install server dependencies
+# Server
 cd server && npm install
 
-# Install client dependencies
+# Client
 cd ../client && npm install
 ```
 
-### 4. Seed the Database
-Initialize the administrator account and demo business records:
+### 4. Seed Database (Optional)
 ```bash
-npm run seed
-# or: cd server && npm run seed
+cd server && npm run seed
 ```
-
-Default seeded credentials:
-- **Regular User**: `demo@invoicehub.local` / `Password@123`
+Default credentials:
+- **Tenant User**: `demo@invoicehub.local` / `Password@123`
 - **Administrator**: `admin@invoicehub.local` / `Admin@InvoiceHub2026`
 
-### 5. Start the Application
-Run both servers:
-
+### 5. Start Development
 ```bash
-# From workspace root:
-npm run server   # Starts Express API at http://localhost:5001
-npm run client   # Starts Vite React App at http://localhost:5173
+# Terminal 1: Backend
+cd server && npm run dev
+
+# Terminal 2: Frontend
+cd client && npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+---
+
+## 📦 Build Android APK with Capacitor
+
+1. **Rebuild web assets**:
+   ```bash
+   cd client
+   npm run build
+   ```
+
+2. **Sync assets to Android project**:
+   ```bash
+   npx cap sync android
+   ```
+
+3. **Open Android Studio**:
+   ```bash
+   npx cap open android
+   ```
+
+4. **Generate APK**:
+   - In Android Studio: **Build** → **Build Bundle(s) / APK(s)** → **Build APK(s)**.
+   - Once completed, click **"locate"** to find `app-debug.apk`.
+   - Side-load the APK directly onto your Android device via USB or file transfer.
+
+---
+
+## ☁️ Deploy to Render (Production)
+
+### 1. Backend Web Service
+1. In the Render Dashboard, create a **New Web Service** connected to your InvoiceHub repository.
+2. Settings:
+   - **Root Directory**: `server`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+3. Environment Variables:
+   - `NODE_ENV`: `production`
+   - `PORT`: `5001` (or let Render set its dynamic port)
+   - `MONGODB_URI`: Your MongoDB Atlas connection URI (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/invoicehub?retryWrites=true&w=majority`)
+   - `CORS_ORIGIN`: Your frontend URL (e.g. `https://invoicehub.onrender.com` or custom domain)
+   - `FRONTEND_URL`: Your frontend URL (used in password reset emails)
+   - `JWT_SECRET`: A secure 32+ character random secret
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`: Production email service credentials
+
+### 2. Frontend Web Service
+1. Create a **Static Site** on Render.
+2. Settings:
+   - **Root Directory**: `client`
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
+3. Environment Variables:
+   - `VITE_API_URL`: `https://<your-render-backend-url>/api/v1`
 
 ---
 
@@ -146,7 +178,6 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 InvoiceHub includes unit tests for the financial calculation engine and automated security integration tests verifying cross-tenant isolation:
 
 ```bash
-# Run calculation engine unit tests and security isolation tests
 cd server && npm test
 ```
 
@@ -175,7 +206,8 @@ Base Prefix: `/api/v1`
 - `POST /api/v1/auth/login` — Sign in and receive JWT token / session cookie
 - `POST /api/v1/auth/logout` — Invalidate session cookie
 - `GET /api/v1/auth/me` — Retrieve currently authenticated user profile
-- `POST /api/v1/auth/forgot-password` — Password reset request endpoint
+- `POST /api/v1/auth/forgot-password` — Password reset request (triggers email)
+- `POST /api/v1/auth/reset-password/:token` — Validate token and set new password
 
 ### Business Profile & Customers
 - `GET /api/v1/business-profile` — Get authenticated user's business profile

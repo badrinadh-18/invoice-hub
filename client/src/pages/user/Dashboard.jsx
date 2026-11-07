@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FileText,
   DollarSign,
@@ -427,7 +427,7 @@ export default function Dashboard() {
               description="Create your first invoice to start billing your customers and tracking payments."
               actionLabel="Create First Invoice"
               actionIcon={PlusCircle}
-              onAction={() => window.location.href = '/invoices/new'}
+              onAction={() => navigate('/invoices/new') }
             />
           </div>
         )}

@@ -1,34 +1,45 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapApp } from '@capacitor/app';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './routes/RouteGuards';
 
-// Layouts
+// Eager Layouts
 import PublicLayout from './layouts/PublicLayout';
 import UserLayout from './layouts/UserLayout';
 import AdminLayout from './layouts/AdminLayout';
 
-// Public Pages
+// Eager Critical Auth Pages for instant first paint
 import LandingPage from './pages/auth/LandingPage';
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import ResetPassword from './pages/auth/ResetPassword';
+
+// Lazy load secondary/heavy pages for instantaneous app launch
+const Register = lazy(() => import('./pages/auth/Register'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
 // User Pages
-import Dashboard from './pages/user/Dashboard';
-import BusinessProfile from './pages/user/BusinessProfile';
-import CustomerList from './pages/user/CustomerList';
-import InvoiceList from './pages/user/InvoiceList';
-import InvoiceEditor from './pages/user/InvoiceEditor';
-import InvoiceDetails from './pages/user/InvoiceDetails';
+const Dashboard = lazy(() => import('./pages/user/Dashboard'));
+const BusinessProfile = lazy(() => import('./pages/user/BusinessProfile'));
+const CustomerList = lazy(() => import('./pages/user/CustomerList'));
+const InvoiceList = lazy(() => import('./pages/user/InvoiceList'));
+const InvoiceEditor = lazy(() => import('./pages/user/InvoiceEditor'));
+const InvoiceDetails = lazy(() => import('./pages/user/InvoiceDetails'));
 
 // Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'));
+
+// Fast lightweight page fallback
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="w-7 h-7 border-2 border-brand-700 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 /**
  * Handles Android Hardware & Gesture Back Button:
@@ -68,12 +79,11 @@ function MobileBackButtonHandler() {
             });
           }
         } else {
-          // Navigate to previous page!
           navigate(-1);
         }
       });
     } catch {
-      // Ignored if running in standard desktop web browser
+      // Not on native device, fallback silently
     }
 
     return () => {
@@ -123,65 +133,67 @@ export default function App() {
           }}
         />
 
-        <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<LandingPage />} />
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="/login"
+                element={
+                  <PublicOnlyRoute>
+                    <Login />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <PublicOnlyRoute>
+                    <Register />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+            </Route>
+
+            {/* User Workspace Routes */}
             <Route
-              path="/login"
               element={
-                <PublicOnlyRoute>
-                  <Login />
-                </PublicOnlyRoute>
+                <ProtectedRoute>
+                  <UserLayout />
+                </ProtectedRoute>
               }
-            />
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/business-profile" element={<BusinessProfile />} />
+              <Route path="/customers" element={<CustomerList />} />
+              <Route path="/invoices" element={<InvoiceList />} />
+              <Route path="/invoices/new" element={<InvoiceEditor />} />
+              <Route path="/invoices/:id" element={<InvoiceDetails />} />
+              <Route path="/invoices/:id/edit" element={<InvoiceEditor />} />
+            </Route>
+
+            {/* Admin Portal Routes */}
             <Route
-              path="/register"
+              path="/admin"
               element={
-                <PublicOnlyRoute>
-                  <Register />
-                </PublicOnlyRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
               }
-            />
-                      <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          </Route>
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+            </Route>
 
-          {/* User Workspace Routes */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <UserLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/business-profile" element={<BusinessProfile />} />
-            <Route path="/customers" element={<CustomerList />} />
-            <Route path="/invoices" element={<InvoiceList />} />
-            <Route path="/invoices/new" element={<InvoiceEditor />} />
-            <Route path="/invoices/:id" element={<InvoiceDetails />} />
-            <Route path="/invoices/:id/edit" element={<InvoiceEditor />} />
-          </Route>
-
-          {/* Admin Portal Routes */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="audit-logs" element={<AdminAuditLogs />} />
-          </Route>
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* 404 Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

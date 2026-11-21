@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
   Printer,
   Download,
@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   Receipt,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  MessageCircle
 } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
@@ -24,11 +25,14 @@ import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PaymentModal from '../../components/invoices/PaymentModal';
 import { downloadInvoicePdf } from '../../utils/downloadPdf';
+import { shareViaWhatsApp } from '../../utils/whatsappShare';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 
 export default function InvoiceDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isJustCreated = searchParams.get('created') === '1';
   const navigate = useNavigate();
 
   const [invoice, setInvoice] = useState(null);
@@ -121,6 +125,40 @@ export default function InvoiceDetails() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* WhatsApp Quick Share Banner when just created */}
+      {isJustCreated && (
+        <div className="no-print p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+              ✓
+            </div>
+            <div>
+              <p className="font-bold text-emerald-950 text-sm sm:text-base">Invoice Ready!</p>
+              <p className="text-xs text-emerald-700">Send this invoice breakdown to your customer directly on WhatsApp.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              icon={MessageCircle}
+              onClick={() => shareViaWhatsApp(invoice)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Share via WhatsApp
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Download}
+              onClick={() => downloadInvoicePdf(invoice._id, invoice.invoiceNumber)}
+            >
+              PDF
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Top Action Bar (Hidden when printing) */}
       <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
         <div className="flex items-center gap-3">
@@ -145,6 +183,17 @@ export default function InvoiceDetails() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* WhatsApp Share Button */}
+          <Button
+            variant="secondary"
+            icon={MessageCircle}
+            size="sm"
+            onClick={() => shareViaWhatsApp(invoice)}
+            className="w-full sm:w-auto text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+          >
+            WhatsApp
+          </Button>
+
           {/* Print */}
           <Button variant="secondary" icon={Printer} size="sm" onClick={handlePrint} className="w-full sm:w-auto">
             Print

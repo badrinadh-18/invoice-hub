@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users,
-  UserPlus,
   Search,
   Edit2,
   Trash2,
@@ -88,14 +87,6 @@ export default function CustomerList() {
             Manage your billing clients, contact details, and associated invoice records ({totalCount} total).
           </p>
         </div>
-
-        <Button
-          variant="primary"
-          icon={UserPlus}
-          onClick={handleOpenCreate}
-        >
-          Add Customer
-        </Button>
       </div>
 
       {/* Filter and Search Bar */}
@@ -282,11 +273,10 @@ export default function CustomerList() {
               description={
                 search
                   ? `No customer matches "${search}". Try a different keyword.`
-                  : 'Add your first customer to quickly generate and assign invoices.'
+                  : 'Customers are automatically added and managed when you issue invoices.'
               }
-              actionLabel={search ? 'Clear Search' : 'Add First Customer'}
-              actionIcon={UserPlus}
-              onAction={search ? () => setSearch('') : handleOpenCreate}
+              actionLabel={search ? 'Clear Search' : undefined}
+              onAction={search ? () => setSearch('') : undefined}
             />
           </div>
         )}

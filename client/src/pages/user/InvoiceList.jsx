@@ -12,7 +12,8 @@ import {
   Ban,
   Eye,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  MessageCircle
 } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
@@ -24,6 +25,7 @@ import EmptyState from '../../components/common/EmptyState';
 import PaymentModal from '../../components/invoices/PaymentModal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { downloadInvoicePdf } from '../../utils/downloadPdf';
+import { shareViaWhatsApp } from '../../utils/whatsappShare';
 import toast from 'react-hot-toast';
 
 export default function InvoiceList() {
@@ -219,6 +221,15 @@ export default function InvoiceList() {
                             <Eye className="w-4 h-4" />
                           </Link>
 
+                          {/* WhatsApp share */}
+                          <button
+                            onClick={() => shareViaWhatsApp(inv)}
+                            className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            title="Share via WhatsApp"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </button>
+
                           {/* PDF download (only if issued) */}
                           {inv.lifecycleState === 'issued' && (
                             <button
@@ -264,7 +275,16 @@ export default function InvoiceList() {
                           )}
 
                           {/* Void (only if issued) */}
-                          {inv.lifecycleState === 'issued' && (
+                          {/* WhatsApp share */}
+                    <button
+                      onClick={() => shareViaWhatsApp(inv)}
+                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
+                      title="Share via WhatsApp"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+
+                    {inv.lifecycleState === 'issued' && (
                             <button
                               onClick={() => setVoidTarget(inv)}
                               className="p-1.5 text-slate-400 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
@@ -331,6 +351,15 @@ export default function InvoiceList() {
                       View
                     </Link>
 
+                    {/* WhatsApp share */}
+                    <button
+                      onClick={() => shareViaWhatsApp(inv)}
+                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
+                      title="Share via WhatsApp"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+
                     {inv.lifecycleState === 'issued' && (
                       <button
                         onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
@@ -368,6 +397,15 @@ export default function InvoiceList() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
+
+                    {/* WhatsApp share */}
+                    <button
+                      onClick={() => shareViaWhatsApp(inv)}
+                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
+                      title="Share via WhatsApp"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
 
                     {inv.lifecycleState === 'issued' && (
                       <button

@@ -2,11 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900;
     padding-bottom: env(safe-area-inset-bottom);
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Touch scaling for mobile readability and input clarity */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 15px !important;
   }
 }
 

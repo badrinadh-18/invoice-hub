@@ -6,7 +6,6 @@ import {
   Clock,
   AlertCircle,
   PlusCircle,
-  UserPlus,
   ArrowRight,
   TrendingUp,
   Download,
@@ -100,11 +99,6 @@ export default function Dashboard() {
           <Link to="/invoices/new">
             <Button variant="primary" icon={PlusCircle} size="sm">
               New Invoice
-            </Button>
-          </Link>
-          <Link to="/customers">
-            <Button variant="secondary" icon={UserPlus} size="sm">
-              Add Customer
             </Button>
           </Link>
           <Link to="/business-profile">

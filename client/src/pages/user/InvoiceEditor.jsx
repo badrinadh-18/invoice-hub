@@ -259,12 +259,12 @@ export default function InvoiceEditor() {
         } else {
           toast.success('Draft invoice updated successfully!');
         }
-        navigate(`/invoices/${id}`);
+        navigate(`/invoices/${id}?created=1`);
       } else {
         // Creating new invoice
         const res = await api.post('/invoices', payload);
         toast.success(issueImmediately ? 'Invoice issued successfully!' : 'Invoice draft saved!');
-        navigate(`/invoices/${res.data.data._id}`);
+        navigate(`/invoices/${res.data.data._id}?created=1`);
       }
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to save invoice.');

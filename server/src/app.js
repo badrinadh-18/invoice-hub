@@ -77,8 +77,8 @@ app.use('/api/v1/invoices', invoiceRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-// Health check endpoint
-app.get('/api/v1/health', (req, res) => {
+// Health check endpoints
+app.get(['/', '/health', '/api/v1/health'], (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

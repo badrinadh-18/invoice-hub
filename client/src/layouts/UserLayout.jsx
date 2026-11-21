@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function UserLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -34,46 +35,46 @@ export default function UserLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row transition-colors duration-150">
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-0 -translate-x-full md:translate-x-0'
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Brand */}
-        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
+        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-brand-700 flex items-center justify-center text-white shadow-sm shadow-brand-700/20">
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-bold text-base text-slate-900 tracking-tight">
-                Invoice<span className="text-brand-700">Hub</span>
+              <span className="font-bold text-base text-slate-900 dark:text-white tracking-tight">
+                Invoice<span className="text-brand-700 dark:text-brand-400">Hub</span>
               </span>
-              <span className="block text-[10px] text-slate-400 font-medium tracking-wide uppercase">
+              <span className="block text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-wide uppercase">
                 WORKSPACE
               </span>
             </div>
           </Link>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="md:hidden text-slate-400 hover:text-slate-600"
+            className="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Quick Action Button */}
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800">
           <Link
             to="/invoices/new"
             onClick={() => setMobileMenuOpen(false)}
@@ -95,8 +96,8 @@ export default function UserLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition ${
                   isActive
-                    ? 'bg-brand-50 text-brand-800 font-semibold shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-brand-50 dark:bg-brand-950/60 text-brand-800 dark:text-brand-300 font-semibold shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-850'
                 }`
               }
             >
@@ -107,16 +108,16 @@ export default function UserLayout() {
 
           {/* Admin link if user is administrator */}
           {isAdmin && (
-            <div className="pt-4 mt-4 border-t border-slate-100">
-              <span className="px-3.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+            <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+              <span className="px-3.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
                 Administration
               </span>
               <NavLink
                 to="/admin/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-50 transition"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition"
               >
-                <Shield className="w-4 h-4 text-amber-600" />
+                <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 Admin Console
               </NavLink>
             </div>
@@ -124,21 +125,21 @@ export default function UserLayout() {
         </nav>
 
         {/* User Card & Logout in Sidebar Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-800 dark:text-brand-300 flex items-center justify-center font-bold text-xs shrink-0">
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{user?.name}</p>
-                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
               title="Sign Out"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -149,11 +150,11 @@ export default function UserLayout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/80 h-16 px-4 sm:px-6 flex items-center justify-between shrink-0">
+        <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 h-16 px-4 sm:px-6 flex items-center justify-between shrink-0 transition-colors duration-150">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+              className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
@@ -162,36 +163,40 @@ export default function UserLayout() {
               <div className="w-7 h-7 rounded-lg bg-brand-700 flex items-center justify-center text-white">
                 <Receipt className="w-4 h-4" />
               </div>
-              <span className="font-bold text-sm text-slate-900 tracking-tight">
-                Invoice<span className="text-brand-700">Hub</span>
+              <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
+                Invoice<span className="text-brand-700 dark:text-brand-400">Hub</span>
               </span>
             </Link>
-            <h1 className="text-base font-semibold text-slate-800 hidden md:block">
+            <h1 className="text-base font-semibold text-slate-800 dark:text-slate-200 hidden md:block">
               InvoiceHub Workspace
             </h1>
           </div>
 
           {/* User actions on top right */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {isAdmin && (
               <Link
                 to="/admin/dashboard"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition"
               >
-                <Shield className="w-3.5 h-3.5 text-amber-600" />
+                <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 Admin Mode
               </Link>
             )}
 
+            {/* Dark Mode Toggle Button */}
+            <ThemeToggle />
+
+            {/* Profile Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition"
+                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               >
                 <div className="w-7 h-7 rounded-full bg-brand-700 text-white flex items-center justify-center font-bold text-xs">
                   {user?.name?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <span className="text-sm font-medium text-slate-700 hidden sm:inline">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:inline">
                   {user?.name}
                 </span>
                 <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -203,11 +208,11 @@ export default function UserLayout() {
                     className="fixed inset-0 z-40"
                     onClick={() => setUserDropdownOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
-                    <div className="px-4 py-2 border-b border-slate-100">
-                      <p className="text-xs text-slate-400">Signed in as</p>
-                      <p className="text-sm font-semibold text-slate-800 truncate">{user?.email}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700">
+                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Signed in as</p>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.email}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300">
                         {user?.role}
                       </span>
                     </div>
@@ -215,7 +220,7 @@ export default function UserLayout() {
                     <Link
                       to="/business-profile"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
+                      className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                     >
                       Business Profile
                     </Link>
@@ -224,7 +229,7 @@ export default function UserLayout() {
                       <Link
                         to="/admin/dashboard"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 font-medium transition"
+                        className="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-medium transition"
                       >
                         Admin Console
                       </Link>
@@ -235,7 +240,7 @@ export default function UserLayout() {
                         setUserDropdownOpen(false);
                         handleLogout();
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 border-t border-slate-100 transition"
+                      className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-t border-slate-100 dark:border-slate-800 transition"
                     >
                       Sign Out
                     </button>
@@ -252,13 +257,13 @@ export default function UserLayout() {
         </main>
 
         {/* Mobile Bottom Navigation Bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1.5 flex items-center justify-around">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-lg px-2 py-1.5 flex items-center justify-around transition-colors duration-150">
           <NavLink
             to="/dashboard"
             end
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+                isActive ? 'text-brand-700 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`
             }
           >
@@ -271,7 +276,7 @@ export default function UserLayout() {
             end
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+                isActive ? 'text-brand-700 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`
             }
           >
@@ -292,7 +297,7 @@ export default function UserLayout() {
             to="/customers"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+                isActive ? 'text-brand-700 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`
             }
           >
@@ -304,7 +309,7 @@ export default function UserLayout() {
             to="/business-profile"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-                isActive ? 'text-brand-700 font-bold' : 'text-slate-500 hover:text-slate-900'
+                isActive ? 'text-brand-700 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`
             }
           >

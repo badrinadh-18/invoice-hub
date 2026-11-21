@@ -17,10 +17,10 @@ export default function Button({
 
   const variants = {
     primary: 'bg-brand-700 hover:bg-brand-800 text-white focus:ring-brand-700 shadow-sm active:scale-[0.98]',
-    secondary: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 focus:ring-brand-700 shadow-sm active:scale-[0.98]',
+    secondary: 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 focus:ring-brand-700 shadow-sm active:scale-[0.98]',
     danger: 'bg-rose-600 hover:bg-rose-700 text-white focus:ring-rose-500 shadow-sm active:scale-[0.98]',
-    outline: 'border border-brand-700 text-brand-700 hover:bg-brand-50 focus:ring-brand-700',
-    ghost: 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:ring-slate-400'
+    outline: 'border border-brand-700 text-brand-700 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 focus:ring-brand-700',
+    ghost: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:ring-slate-400'
   };
 
   const sizes = {

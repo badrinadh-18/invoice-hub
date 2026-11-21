@@ -86,10 +86,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Page Title & Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Business Overview</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Business Overview</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Real-time billing analytics, active receivables, and recent invoicing activity.
           </p>
         </div>
@@ -111,67 +111,67 @@ export default function Dashboard() {
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Total Invoices */}
-        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+        <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Invoices</span>
             <FileText className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-slate-900">{summary?.totalInvoices || 0}</p>
-          <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 inline-block truncate max-w-full">
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{summary?.totalInvoices || 0}</p>
+          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 inline-block truncate max-w-full">
             {summary?.draftCount || 0} drafts
           </span>
         </div>
 
         {/* Total Invoiced */}
-        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+        <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Invoiced</span>
-            <TrendingUp className="w-4 h-4 text-brand-700" />
+            <TrendingUp className="w-4 h-4 text-brand-700 dark:text-brand-400" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white truncate">
             {formatCurrency(summary?.totalInvoicedAmount || 0)}
           </p>
-          <span className="text-[11px] sm:text-xs text-brand-700 font-medium mt-0.5 inline-block">
+          <span className="text-[11px] sm:text-xs text-brand-700 dark:text-brand-400 font-medium mt-0.5 inline-block">
             Net total
           </span>
         </div>
 
         {/* Amount Paid */}
-        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+        <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Collected</span>
-            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-emerald-600 truncate">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
             {formatCurrency(summary?.totalAmountPaid || 0)}
           </p>
-          <span className="text-[11px] sm:text-xs text-emerald-700 font-medium mt-0.5 inline-block">
+          <span className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-400 font-medium mt-0.5 inline-block">
             Cleared
           </span>
         </div>
 
         {/* Outstanding Balance */}
-        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+        <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Receivables</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+            <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-amber-600 truncate">
+          <p className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
             {formatCurrency(summary?.outstandingBalance || 0)}
           </p>
-          <span className="text-[11px] sm:text-xs text-slate-500 mt-0.5 inline-block">
+          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 inline-block">
             Balance due
           </span>
         </div>
 
         {/* Overdue (Spans full width on 2-col mobile) */}
-        <div className="col-span-2 lg:col-span-1 bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
+        <div className="col-span-2 lg:col-span-1 bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">Overdue</span>
-            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <AlertCircle className="w-4 h-4 text-rose-500 dark:text-rose-400" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-rose-600">{summary?.overdueCount || 0}</p>
-          <span className="text-[11px] sm:text-xs text-rose-700 font-medium mt-0.5 inline-block">
+          <p className="text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400">{summary?.overdueCount || 0}</p>
+          <span className="text-[11px] sm:text-xs text-rose-700 dark:text-rose-400 font-medium mt-0.5 inline-block">
             Needs attention
           </span>
         </div>

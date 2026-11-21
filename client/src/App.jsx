@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapApp } from '@capacitor/app';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './routes/RouteGuards';
 
 // Eager Layouts
@@ -105,8 +106,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <MobileBackButtonHandler />
-      <AuthProvider>
+      <ThemeProvider>
+        <MobileBackButtonHandler />
+        <AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -194,7 +196,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

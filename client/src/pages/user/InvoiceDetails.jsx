@@ -122,14 +122,14 @@ export default function InvoiceDetails() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* WhatsApp Quick Share Banner when just created */}
       {isJustCreated && (
-        <div className="no-print p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+        <div className="no-print p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
               ✓
             </div>
             <div>
-              <p className="font-bold text-emerald-950 text-sm sm:text-base">Invoice Ready!</p>
-              <p className="text-xs text-emerald-700">Send this invoice breakdown to your customer directly on WhatsApp.</p>
+              <p className="font-bold text-emerald-950 dark:text-emerald-200 text-sm sm:text-base">Invoice Ready!</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">Send this invoice breakdown to your customer directly on WhatsApp.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -155,17 +155,17 @@ export default function InvoiceDetails() {
       )}
 
       {/* Top Action Bar (Hidden when printing) */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
           <Link
             to="/invoices"
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {invoice.invoiceNumber}
               </h1>
               <StatusBadge status={invoice.paymentStatus} />

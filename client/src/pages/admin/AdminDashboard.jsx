@@ -49,12 +49,12 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             System Administration Overview
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Real-time aggregate platform statistics and security governance.
           </p>
         </div>
@@ -75,52 +75,52 @@ export default function AdminDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Registered Users</span>
-            <Users className="w-4 h-4 text-brand-700" />
+            <Users className="w-4 h-4 text-brand-700 dark:text-brand-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">{users.total || 0}</p>
-          <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-            <span className="text-emerald-600 font-semibold">{users.active || 0} Active</span>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{users.total || 0}</p>
+          <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{users.active || 0} Active</span>
             <span>•</span>
-            <span className="text-rose-600 font-semibold">{users.suspended || 0} Suspended</span>
+            <span className="text-rose-600 dark:text-rose-400 font-semibold">{users.suspended || 0} Suspended</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Total Invoices</span>
             <FileSpreadsheet className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">{invoices.total || 0}</p>
-          <div className="mt-2 text-xs text-brand-700 font-medium">
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{invoices.total || 0}</p>
+          <div className="mt-2 text-xs text-brand-700 dark:text-brand-400 font-medium">
             {invoices.issued || 0} issued across all tenants
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">System Billing Total</span>
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
+            <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {formatCurrency(invoices.aggregateAmount || 0)}
           </p>
-          <div className="mt-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Excludes voided records
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Collected Funds</span>
-            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-emerald-600">
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(invoices.aggregatePaid || 0)}
           </p>
-          <div className="mt-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Outstanding: {formatCurrency(invoices.aggregateOutstanding || 0)}
           </div>
         </div>

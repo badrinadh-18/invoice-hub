@@ -11,6 +11,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -29,18 +30,18 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col md:flex-row transition-colors duration-150">
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Admin Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 text-slate-100 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -118,23 +119,24 @@ export default function AdminLayout() {
 
       {/* Content */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 h-16 px-4 sm:px-6 flex items-center justify-between shrink-0">
+        <header className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 px-4 sm:px-6 flex items-center justify-between shrink-0 transition-colors duration-150">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-md">
               Privileged Administrator Environment
             </span>
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link
               to="/dashboard"
-              className="text-xs font-medium text-brand-700 hover:text-brand-900 transition flex items-center gap-1"
+              className="text-xs font-medium text-brand-700 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-300 transition flex items-center gap-1"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Switch to Workspace

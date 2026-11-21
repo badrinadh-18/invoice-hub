@@ -2,18 +2,24 @@ package com.invoicehub.app;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,14 +30,39 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Hardware acceleration for ultra-smooth 60-120fps UI rendering
+        // Hardware acceleration for ultra-smooth UI rendering
         getWindow().setFlags(
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
         );
 
+        // Prevent full-screen bleed into status bar & navigation bar
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            getWindow().setStatusBarColor(Color.parseColor("#0F172A"));
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+            controller.setAppearanceLightStatusBars(false); // clear white text/icons on dark navy bar
+        }
+
+        View contentView = findViewById(android.R.id.content);
+        if (contentView != null) {
+            contentView.setFitsSystemWindows(true);
+            ViewCompat.setOnApplyWindowInsetsListener(contentView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
+
         WebView webView = getBridge().getWebView();
         if (webView != null) {
+            webView.setFitsSystemWindows(true);
             WebSettings settings = webView.getSettings();
             // Enable storage & caching for instant loading
             settings.setDomStorageEnabled(true);
@@ -41,7 +72,7 @@ public class MainActivity extends BridgeActivity {
             // Responsive scaling
             settings.setUseWideViewPort(true);
             settings.setLoadWithOverviewMode(true);
-            settings.setTextZoom(105); // optimized mobile font scaling
+            settings.setTextZoom(100);
 
             // Register native PDF download bridge
             webView.addJavascriptInterface(new Object() {

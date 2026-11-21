@@ -11,7 +11,6 @@ import {
   X,
   Shield,
   Receipt,
-  User as UserIcon,
   ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';

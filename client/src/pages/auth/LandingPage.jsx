@@ -4,12 +4,10 @@ import {
   Receipt,
   ShieldCheck,
   Zap,
-  FileText,
   DollarSign,
   Lock,
   ArrowRight,
   CheckCircle2,
-  PieChart,
   Download
 } from 'lucide-react';
 import Button from '../../components/common/Button';

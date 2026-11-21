@@ -1,11 +1,10 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { Receipt, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function PublicLayout() {
-  const { isAuthenticated, user, isAdmin } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">

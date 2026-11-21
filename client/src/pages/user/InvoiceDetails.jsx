@@ -9,11 +9,7 @@ import {
   Edit2,
   Trash2,
   Send,
-  Building2,
-  Users,
-  CheckCircle2,
   Receipt,
-  Calendar,
   AlertTriangle,
   MessageCircle
 } from 'lucide-react';
@@ -121,7 +117,6 @@ export default function InvoiceDetails() {
   const customer = invoice.customerSnapshot || {};
   const isDraft = invoice.lifecycleState === 'draft';
   const isIssued = invoice.lifecycleState === 'issued';
-  const isVoid = invoice.lifecycleState === 'void';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

@@ -21,7 +21,6 @@ export default function InvoiceEditor() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [customers, setCustomers] = useState([]);
-  const [businessProfile, setBusinessProfile] = useState(null);
 
   // Customer Direct Inputs
   const [customerId, setCustomerId] = useState('');
@@ -59,7 +58,6 @@ export default function InvoiceEditor() {
         const custList = custRes.data?.data || [];
         setCustomers(custList);
         const profile = profRes.data?.data;
-        setBusinessProfile(profile);
 
         if (profile) {
           setCurrency(profile.defaultCurrency || 'INR');

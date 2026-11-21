@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Users,
-  Search,
-  Shield,
-  UserCheck,
-  UserX,
-  AlertOctagon,
-  CheckCircle2,
-  AlertTriangle
-} from 'lucide-react';
+import { Search } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';

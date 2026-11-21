@@ -1,14 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  History,
-  Search,
-  Filter,
-  Shield,
-  Clock,
-  UserCheck,
-  CreditCard,
-  FileText
-} from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';

@@ -6,7 +6,6 @@ import {
   Trash2,
   Mail,
   Phone,
-  FileText,
   AlertTriangle
 } from 'lucide-react';
 import api from '../../services/api';
@@ -50,11 +49,6 @@ export default function CustomerList() {
   useEffect(() => {
     fetchCustomers();
   }, [page, search]);
-
-  const handleOpenCreate = () => {
-    setSelectedCustomer(null);
-    setIsFormOpen(true);
-  };
 
   const handleOpenEdit = (customer) => {
     setSelectedCustomer(customer);

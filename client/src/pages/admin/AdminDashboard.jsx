@@ -2,20 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users,
-  ShieldCheck,
   FileSpreadsheet,
   DollarSign,
-  AlertOctagon,
   History,
   ArrowRight,
-  TrendingUp,
-  UserCheck
+  TrendingUp
 } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);

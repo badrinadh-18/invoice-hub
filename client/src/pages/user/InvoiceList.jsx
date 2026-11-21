@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   FileText,
   PlusCircle,
   Search,
-  Filter,
   Download,
   CreditCard,
   Edit2,
   Trash2,
   Ban,
   Eye,
-  Calendar,
   AlertTriangle,
   MessageCircle
 } from 'lucide-react';

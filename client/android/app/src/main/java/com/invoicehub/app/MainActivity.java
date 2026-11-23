@@ -2,6 +2,7 @@ package com.invoicehub.app;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -74,13 +75,93 @@ public class MainActivity extends BridgeActivity {
             settings.setLoadWithOverviewMode(true);
             settings.setTextZoom(100);
 
-            // Register native PDF download bridge
+            // Register native PDF download & share bridge
             webView.addJavascriptInterface(new Object() {
                 @JavascriptInterface
                 public void downloadPdf(String fileName, String base64Data) {
                     runOnUiThread(() -> saveAndOpenPdf(fileName, base64Data));
                 }
+
+                @JavascriptInterface
+                public void sharePdfViaWhatsApp(String fileName, String base64Data, String recipientPhone, String messageText) {
+                    runOnUiThread(() -> sharePdfToWhatsAppNative(fileName, base64Data, recipientPhone, messageText));
+                }
             }, "AndroidDownloader");
+        }
+    }
+
+    private void sharePdfToWhatsAppNative(String fileName, String base64Data, String recipientPhone, String messageText) {
+        try {
+            byte[] pdfBytes = Base64.decode(base64Data, Base64.DEFAULT);
+
+            // Write PDF to app downloads cache
+            File appDownloadsDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (appDownloadsDir != null && !appDownloadsDir.exists()) {
+                appDownloadsDir.mkdirs();
+            }
+            File cacheFile = new File(appDownloadsDir, fileName);
+            try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+                fos.write(pdfBytes);
+            }
+
+            Uri fileUri = FileProvider.getUriForFile(
+                this,
+                getPackageName() + ".fileprovider",
+                cacheFile
+            );
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            if (messageText != null && !messageText.trim().isEmpty()) {
+                shareIntent.putExtra(Intent.EXTRA_TEXT, messageText);
+            }
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            // Clean recipient phone if provided
+            String cleanPhone = recipientPhone != null ? recipientPhone.replaceAll("[^0-9]", "") : "";
+            if (cleanPhone.length() == 10) {
+                cleanPhone = "91" + cleanPhone;
+            }
+
+            // Detect installed WhatsApp package
+            PackageManager pm = getPackageManager();
+            boolean hasStandardWhatsApp = false;
+            boolean hasBusinessWhatsApp = false;
+            try {
+                pm.getPackageInfo("com.whatsapp", PackageManager.GET_ACTIVITIES);
+                hasStandardWhatsApp = true;
+            } catch (PackageManager.NameNotFoundException ignored) {}
+
+            try {
+                pm.getPackageInfo("com.whatsapp.w4b", PackageManager.GET_ACTIVITIES);
+                hasBusinessWhatsApp = true;
+            } catch (PackageManager.NameNotFoundException ignored) {}
+
+            String targetPackage = hasStandardWhatsApp ? "com.whatsapp" : (hasBusinessWhatsApp ? "com.whatsapp.w4b" : null);
+
+            if (targetPackage != null) {
+                shareIntent.setPackage(targetPackage);
+                if (!cleanPhone.isEmpty()) {
+                    shareIntent.putExtra("jid", cleanPhone + "@s.whatsapp.net");
+                }
+                try {
+                    startActivity(shareIntent);
+                    return;
+                } catch (Exception launchErr) {
+                    shareIntent.setPackage(null);
+                }
+            }
+
+            // Fallback: chooser
+            Intent chooser = Intent.createChooser(shareIntent, "Share Invoice PDF via WhatsApp");
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(chooser);
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to share PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
     }
 

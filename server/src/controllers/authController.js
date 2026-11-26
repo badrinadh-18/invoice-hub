@@ -173,23 +173,104 @@ export const getMe = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, frontendUrl } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required.' });
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
     }
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.status(200).json({ success: true, message: 'If the email exists, a reset link has been sent.' });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Invalidate existing unused reset tokens for this user
+    if (user) {
+      await PasswordReset.updateMany(
+        { userId: user._id, used: false },
+        { $set: { used: true } }
+      );
+
+      const plainToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = hashToken(plainToken);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour validity
+
+      await PasswordReset.create({
+        userId: user._id,
+        tokenHash,
+        expiresAt,
+        used: false
+      });
+
+      // Resolve base frontend URL
+      let frontendBase = frontendUrl || req.headers.origin || process.env.FRONTEND_URL;
+      if (!frontendBase && req.headers.referer) {
+        try {
+          const parsed = new URL(req.headers.referer);
+          frontendBase = parsed.origin;
+        } catch (e) {}
+      }
+      if (!frontendBase || frontendBase.includes('localhost:5001')) {
+        frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+      }
+
+      const resetUrl = `${frontendBase.replace(/\/$/, '')}/reset-password/${plainToken}`;
+
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your InvoiceHub Password</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
+  <table role="presentation" style="width: 100%; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="background-color: #0f766e; padding: 28px 24px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Invoice<span style="color: #99f6e4;">Hub</span></h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 32px 28px;">
+        <h2 style="font-size: 18px; margin-top: 0; color: #0f172a;">Password Reset Request</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #334155;">Hello <strong>${user.name || 'User'}</strong>,</p>
+        <p style="font-size: 14px; line-height: 1.6; color: #334155;">We received a request to reset the password for your InvoiceHub account (<code>${user.email}</code>).</p>
+        <p style="font-size: 14px; line-height: 1.6; color: #334155;">Click the button below to choose a new password:</p>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetUrl}" style="display: inline-block; background-color: #0f766e; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 14px 32px; border-radius: 10px; box-shadow: 0 2px 4px rgba(15,118,110,0.2);" target="_blank">Reset Your Password</a>
+        </div>
+        <p style="font-size: 13px; line-height: 1.5; color: #64748b;">This password reset link is valid for <strong>60 minutes</strong>. If you did not request a password reset, you can safely disregard this email; your password will remain unchanged.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">If the button above does not work, copy and paste this link into your web browser:</p>
+        <p style="font-size: 12px; word-break: break-all; margin: 0;"><a href="${resetUrl}" style="color: #0f766e;">${resetUrl}</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 28px; background-color: #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
+        <p style="margin: 0;">© ${new Date().getFullYear()} InvoiceHub • Secure Billing & Invoicing Platform</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
+      try {
+        await sendEmail(user.email, 'Reset Your InvoiceHub Password', html);
+      } catch (mailErr) {
+        console.error('Email dispatch error:', mailErr);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `A password reset link has been sent to ${user.email}. Please check your inbox or spam folder.`,
+        resetUrl
+      });
     }
-    const plainToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(plainToken);
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
-    await PasswordReset.create({ userId: user._id, tokenHash, expiresAt, used: false });
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${plainToken}`;
-    const html = `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`;
-    await sendEmail(user.email, 'Password Reset', html);
-    return res.status(200).json({ success: true, message: 'If the email exists, a reset link has been sent.' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists with this email address, a password reset link has been dispatched.'
+    });
   } catch (error) {
+    console.error('forgotPassword error:', error);
     return res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
   }
 };
@@ -197,14 +278,23 @@ export const forgotPassword = async (req, res) => {
 export const validateResetToken = async (req, res) => {
   try {
     const { token } = req.params;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Reset token is required.' });
+    }
     const tokenHash = hashToken(token);
     const record = await PasswordReset.findOne({ tokenHash, used: false, expiresAt: { $gt: new Date() } });
     if (!record) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+      return res.status(400).json({ success: false, message: 'Invalid or expired password reset link.' });
     }
-    return res.status(200).json({ success: true, message: 'Valid token.' });
+    const user = await User.findById(record.userId).select('email name');
+    return res.status(200).json({
+      success: true,
+      message: 'Valid token.',
+      email: user?.email || '',
+      name: user?.name || ''
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Failed to validate token.' });
+    return res.status(500).json({ success: false, message: 'Failed to validate reset link.' });
   }
 };
 
@@ -212,17 +302,17 @@ export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-    if (!password) {
-      return res.status(400).json({ success: false, message: 'Password is required.' });
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
     const tokenHash = hashToken(token);
     const record = await PasswordReset.findOne({ tokenHash, used: false, expiresAt: { $gt: new Date() } });
     if (!record) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token. Please request a new link.' });
     }
     const user = await User.findById(record.userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'Associated user account not found.' });
     }
     user.passwordHash = await User.hashPassword(password);
     await user.save();
@@ -239,8 +329,9 @@ export const resetPassword = async (req, res) => {
       ip: req.ip,
     });
 
-    return res.status(200).json({ success: true, message: 'Password has been reset successfully.' });
+    return res.status(200).json({ success: true, message: 'Password has been reset successfully. You can now sign in with your new password.' });
   } catch (error) {
+    console.error('resetPassword error:', error);
     return res.status(500).json({ success: false, message: 'Failed to reset password.' });
   }
 };

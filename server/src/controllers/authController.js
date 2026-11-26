@@ -335,3 +335,51 @@ export const resetPassword = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to reset password.' });
   }
 };
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: { code: 'MISSING_FIELDS', message: 'Current password and new password are required.' }
+      });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        error: { code: 'INVALID_PASSWORD', message: 'New password must be at least 6 characters long.' }
+      });
+    }
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+    if (!user) {
+      return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'User not found.' } });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        error: { code: 'INCORRECT_PASSWORD', message: 'The current password you entered is incorrect.' }
+      });
+    }
+
+    user.passwordHash = await User.hashPassword(newPassword);
+    await user.save();
+
+    await logAuditEvent({
+      actorId: user._id,
+      actorEmail: user.email,
+      actorRole: user.role,
+      action: 'PASSWORD_CHANGED',
+      targetType: 'User',
+      targetId: user._id,
+      ip: req.ip
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your password has been changed successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

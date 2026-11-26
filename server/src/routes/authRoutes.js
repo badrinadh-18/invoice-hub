@@ -6,7 +6,8 @@ import {
   getMe,
   forgotPassword,
   validateResetToken,
-  resetPassword
+  resetPassword,
+  changePassword
 } from '../controllers/authController.js';
 import rateLimit from 'express-rate-limit';
 import { authenticate } from '../middleware/auth.js';
@@ -27,5 +28,6 @@ router.get('/me', authenticate, getMe);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.get('/reset-password/:token', validateResetToken);
 router.post('/reset-password/:token', resetPassword);
+router.put('/change-password', authenticate, changePassword);
 
 export default router;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Info, Sun, Moon } from 'lucide-react';
+import { Save, Info, Sun, Moon, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -11,6 +11,16 @@ export default function BusinessProfile() {
   const { theme, isDark, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     businessName: '',
     email: '',
@@ -79,6 +89,38 @@ export default function BusinessProfile() {
       toast.error(err.response?.data?.error?.message || 'Failed to save business profile.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      toast.error('Please enter your current password.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match.');
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const res = await api.put('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+      toast.success(res.data?.message || 'Password changed successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -379,6 +421,97 @@ export default function BusinessProfile() {
           </Button>
         </div>
       </form>
+
+      {/* Account Security & Password Change */}
+      <Card title="Account Security" subtitle="Update your account login password">
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                Current Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPass ? 'text' : 'password'}
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 pr-10 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPass(!showCurrentPass)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                New Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showNewPass ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min 6 characters"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 pr-10 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                Confirm New Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPass ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 pr-10 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              type="submit"
+              variant="secondary"
+              size="md"
+              loading={updatingPassword}
+              icon={KeyRound}
+              className="w-full sm:w-auto"
+            >
+              Update Password
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

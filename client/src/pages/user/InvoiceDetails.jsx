@@ -102,6 +102,7 @@ export default function InvoiceDetails() {
   const customer = invoice.customerSnapshot || {};
   const isDraft = invoice.lifecycleState === 'draft';
   const isIssued = invoice.lifecycleState === 'issued';
+  const isPurchase = invoice.invoiceType === 'purchase';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -153,6 +154,13 @@ export default function InvoiceDetails() {
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {invoice.invoiceNumber}
               </h1>
+              <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                isPurchase
+                  ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-brand-50 dark:bg-brand-950/80 text-brand-800 dark:text-brand-300 border-brand-200 dark:border-brand-800'
+              }`}>
+                {isPurchase ? '📦 Purchase' : '🏷️ Sale'}
+              </span>
               <StatusBadge status={invoice.paymentStatus} />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -270,7 +278,7 @@ export default function InvoiceDetails() {
 
           <div className="sm:text-right">
             <span className="text-xs uppercase tracking-widest font-bold text-brand-700 dark:text-brand-400 block mb-1">
-              INVOICE
+              {isPurchase ? 'PURCHASE BILL' : 'INVOICE'}
             </span>
             <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{invoice.invoiceNumber}</p>
 
@@ -291,13 +299,13 @@ export default function InvoiceDetails() {
           </div>
         </div>
 
-        {/* Bill To Customer Section */}
+        {/* Bill To Customer or Purchased From Company Section */}
         <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1.5">
-            Bill To:
+            {isPurchase ? 'Purchased From / Company:' : 'Bill To:'}
           </span>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            {customer.name || 'Valued Customer'}
+            {customer.name || (isPurchase ? 'Company Name' : 'Valued Customer')}
           </h3>
           <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 mt-1">
             {customer.billingAddress && <p>{customer.billingAddress}</p>}

@@ -18,6 +18,10 @@ export const generateInvoicePDF = (invoice) => {
       const seller = invoice.sellerSnapshot || {};
       const customer = invoice.customerSnapshot || {};
       const currency = invoice.currency || 'USD';
+      const isPurchase = invoice.invoiceType === 'purchase';
+      const docTitle = isPurchase ? 'PURCHASE BILL' : 'INVOICE';
+      const billLabel = isPurchase ? 'PURCHASED FROM / COMPANY:' : 'BILL TO:';
+      const partyName = customer.name || (isPurchase ? 'Company Name' : 'Customer Name');
 
       const formatCurrency = (val) => {
         return `${currency} ${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -36,11 +40,11 @@ export const generateInvoicePDF = (invoice) => {
       doc.rect(40, 40, 515, 60).fill('#0F766E'); // Teal primary accent
       doc.fillColor('#FFFFFF');
       doc.fontSize(22).font('Helvetica-Bold').text('INVOICEHUB', 55, 52);
-      doc.fontSize(10).font('Helvetica').text('Multi-User Bill Management System', 55, 78);
+      doc.fontSize(10).font('Helvetica').text(isPurchase ? 'Official Purchase Bill Record' : 'Multi-User Bill Management System', 55, 78);
 
       // Invoice status badge top right
-      const statusText = (invoice.paymentStatus || invoice.lifecycleState || '').toUpperCase();
-      doc.fontSize(12).font('Helvetica-Bold').text(statusText, 420, 62, { width: 120, align: 'right' });
+      const statusText = `${docTitle} - ${(invoice.paymentStatus || invoice.lifecycleState || '').toUpperCase()}`;
+      doc.fontSize(11).font('Helvetica-Bold').text(statusText, 330, 62, { width: 210, align: 'right' });
 
       // Spacing
       let y = 120;
@@ -61,11 +65,11 @@ export const generateInvoicePDF = (invoice) => {
       // Invoice details block on the right
       const infoX = 350;
       let infoY = 120;
-      doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(12).text('INVOICE DETAILS', infoX, infoY);
+      doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(12).text(isPurchase ? 'PURCHASE DETAILS' : 'INVOICE DETAILS', infoX, infoY);
       infoY += 18;
       doc.font('Helvetica').fontSize(9).fillColor('#475569');
 
-      doc.text(`Invoice Number:`, infoX, infoY);
+      doc.text(`${isPurchase ? 'Bill' : 'Invoice'} Number:`, infoX, infoY);
       doc.font('Helvetica-Bold').fillColor('#0F172A').text(`${invoice.invoiceNumber}`, infoX + 90, infoY);
       infoY += 14;
 
@@ -81,14 +85,14 @@ export const generateInvoicePDF = (invoice) => {
       doc.text(currency, infoX + 90, infoY);
       infoY += 14;
 
-      // Bill To (Customer)
+      // Bill To (Customer or Company)
       y = Math.max(y, infoY) + 15;
       doc.rect(40, y, 515, 1).fill('#E2E8F0');
       y += 15;
 
-      doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(11).text('BILL TO:', 40, y);
+      doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(11).text(billLabel, 40, y);
       y += 16;
-      doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A').text(customer.name || 'Customer Name', 40, y);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A').text(partyName, 40, y);
       y += 15;
       doc.font('Helvetica').fontSize(9).fillColor('#475569');
       if (customer.billingAddress) { doc.text(customer.billingAddress, 40, y); y += 13; }

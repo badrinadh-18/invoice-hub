@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Trash2,
@@ -17,12 +17,18 @@ import toast from 'react-hot-toast';
 export default function InvoiceEditor() {
   const { id } = useParams(); // If present, editing draft
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [customers, setCustomers] = useState([]);
 
-  // Customer Direct Inputs
+  // Invoice Type: 'sale' vs 'purchase'
+  const [invoiceType, setInvoiceType] = useState(() => {
+    return searchParams.get('type') === 'purchase' ? 'purchase' : 'sale';
+  });
+
+  // Customer / Company Direct Inputs
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -73,6 +79,10 @@ export default function InvoiceEditor() {
             toast.error('Void invoices cannot be edited.');
             navigate(`/invoices/${id}`);
             return;
+          }
+
+          if (inv.invoiceType) {
+            setInvoiceType(inv.invoiceType);
           }
 
           const existingCustId = inv.customerId?._id || inv.customerId || '';
@@ -199,7 +209,7 @@ export default function InvoiceEditor() {
   const handleSubmit = async (issueImmediately) => {
     const trimmedName = customerName.trim();
     if (!trimmedName) {
-      toast.error('Please enter the customer name.');
+      toast.error(invoiceType === 'purchase' ? 'Please enter the company name.' : 'Please enter the customer name.');
       return;
     }
 
@@ -243,6 +253,7 @@ export default function InvoiceEditor() {
       }
 
       const payload = {
+        invoiceType,
         customerId: resolvedCustomerId || undefined,
         customerName: trimmedName,
         customerPhone: customerPhone.trim(),
@@ -267,15 +278,19 @@ export default function InvoiceEditor() {
         await api.put(`/invoices/${id}`, payload);
         if (issueImmediately) {
           await api.post(`/invoices/${id}/issue`).catch(() => {});
-          toast.success('Invoice updated and issued successfully!');
+          toast.success(invoiceType === 'purchase' ? 'Purchase bill updated and recorded!' : 'Invoice updated and issued successfully!');
         } else {
-          toast.success('Invoice updated successfully!');
+          toast.success(invoiceType === 'purchase' ? 'Purchase bill updated successfully!' : 'Invoice updated successfully!');
         }
         navigate(`/invoices/${id}?created=1`);
       } else {
         // Creating new invoice
         const res = await api.post('/invoices', payload);
-        toast.success(issueImmediately ? 'Invoice issued successfully!' : 'Invoice draft saved!');
+        toast.success(
+          issueImmediately
+            ? (invoiceType === 'purchase' ? 'Purchase bill recorded successfully!' : 'Invoice issued successfully!')
+            : (invoiceType === 'purchase' ? 'Purchase bill draft saved!' : 'Invoice draft saved!')
+        );
         navigate(`/invoices/${res.data.data._id}?created=1`);
       }
     } catch (err) {
@@ -306,10 +321,14 @@ export default function InvoiceEditor() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {id ? 'Edit Draft Invoice' : 'Create New Invoice'}
+              {id
+                ? (invoiceType === 'purchase' ? 'Edit Purchase Bill' : 'Edit Sale Invoice')
+                : (invoiceType === 'purchase' ? 'Create New Purchase Bill' : 'Create New Sale Invoice')}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Enter customer details and dynamic line items.
+              {invoiceType === 'purchase'
+                ? 'Record incoming bill details from companies and vendors.'
+                : 'Enter customer details and dynamic line items for sales.'}
             </p>
           </div>
         </div>
@@ -329,18 +348,65 @@ export default function InvoiceEditor() {
             loading={submitting}
             onClick={() => handleSubmit(true)}
           >
-            Issue Invoice
+            {invoiceType === 'purchase' ? 'Record Purchase' : 'Issue Invoice'}
           </Button>
         </div>
       </div>
 
-      {/* Customer & Dates Section */}
-      <Card title="Customer Information" subtitle="Enter customer name, phone number, address, and invoice dates">
+      {/* Bill Type Selector (Sale vs Purchase) */}
+      <div className="flex items-center justify-between flex-wrap gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-1">
+            Bill Type:
+          </span>
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setInvoiceType('sale')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                invoiceType === 'sale'
+                  ? 'bg-brand-700 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🏷️</span>
+              <span>Sale Invoice</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setInvoiceType('purchase')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                invoiceType === 'purchase'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>📦</span>
+              <span>Purchase Bill</span>
+            </button>
+          </div>
+        </div>
+        <span className="text-xs text-slate-500 dark:text-slate-400 italic">
+          {invoiceType === 'purchase'
+            ? 'ℹ️ For purchase bills, company name is recorded in place of customer name.'
+            : 'ℹ️ For sale invoices, customer details and payment tracking are recorded.'}
+        </span>
+      </div>
+
+      {/* Customer / Company & Dates Section */}
+      <Card
+        title={invoiceType === 'purchase' ? 'Company / Vendor Information' : 'Customer Information'}
+        subtitle={
+          invoiceType === 'purchase'
+            ? 'Enter company name, phone number, address, and purchase bill dates'
+            : 'Enter customer name, phone number, address, and invoice dates'
+        }
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Customer Name *
+                {invoiceType === 'purchase' ? 'Company Name *' : 'Customer Name *'}
               </label>
               <input
                 type="text"
@@ -348,7 +414,7 @@ export default function InvoiceEditor() {
                 list="customer-suggestions"
                 value={customerName}
                 onChange={(e) => handleCustomerNameChange(e.target.value)}
-                placeholder="Type customer or company name..."
+                placeholder={invoiceType === 'purchase' ? 'Type company name...' : 'Type customer or company name...'}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
               />
               <datalist id="customer-suggestions">
@@ -360,7 +426,7 @@ export default function InvoiceEditor() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Phone / WhatsApp Number</span>
+                <span>{invoiceType === 'purchase' ? 'Company Phone / WhatsApp' : 'Phone / WhatsApp Number'}</span>
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">WhatsApp Share</span>
               </label>
               <div className="relative flex rounded-lg shadow-sm">
@@ -386,13 +452,13 @@ export default function InvoiceEditor() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Customer Address
+                {invoiceType === 'purchase' ? 'Company Address' : 'Customer Address'}
               </label>
               <input
                 type="text"
                 value={customerAddress}
                 onChange={(e) => setCustomerAddress(e.target.value)}
-                placeholder="e.g. 123 Business Way, Suite 400, City, State"
+                placeholder={invoiceType === 'purchase' ? 'e.g. Supplier Street, Industrial Area, City' : 'e.g. 123 Business Way, Suite 400, City, State'}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
               />
             </div>
@@ -400,20 +466,20 @@ export default function InvoiceEditor() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Issue Date
               </label>
               <input
                 type="date"
                 value={issueDate}
                 onChange={(e) => setIssueDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Payment Due Date *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                {invoiceType === 'purchase' ? 'Payment Due Date' : 'Payment Due Date *'}
               </label>
               <input
                 type="date"

@@ -301,25 +301,36 @@ export default function Dashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {recentInvoices.map((inv) => (
-                    <tr key={inv._id} className="hover:bg-slate-50/80 transition">
-                      <td className="px-5 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
-                        <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700">
-                          {inv.invoiceNumber}
-                        </Link>
+                    <tr key={inv._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700 dark:hover:text-brand-400">
+                            {inv.invoiceNumber}
+                          </Link>
+                          {inv.invoiceType === 'purchase' ? (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              PUR
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                              SALE
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-800 font-medium">
-                        {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                      <td className="px-5 py-3.5 text-slate-800 dark:text-slate-200 font-medium">
+                        {inv.customerSnapshot?.name || inv.customerId?.name || (inv.invoiceType === 'purchase' ? 'Company Name' : 'Customer')}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                         {formatDate(inv.issueDate)}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                         {formatDate(inv.dueDate)}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-slate-900 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-right font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                         {formatCurrency(inv.grandTotal, inv.currency)}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-medium text-amber-700 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-right font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap">
                         {formatCurrency(inv.balanceDue, inv.currency)}
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
@@ -355,20 +366,30 @@ export default function Dashboard() {
               {recentInvoices.map((inv) => (
                 <div key={inv._id} className="p-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition space-y-2">
                   <div className="flex items-center justify-between">
-                    <Link
-                      to={`/invoices/${inv._id}`}
-                      className="font-bold text-sm text-brand-700"
-                    >
-                      {inv.invoiceNumber}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        to={`/invoices/${inv._id}`}
+                        className="font-bold text-sm text-brand-700 dark:text-brand-400"
+                      >
+                        {inv.invoiceNumber}
+                      </Link>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                        inv.invoiceType === 'purchase'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800'
+                      }`}>
+                        {inv.invoiceType === 'purchase' ? 'Purchase' : 'Sale'}
+                      </span>
+                    </div>
                     <StatusBadge status={inv.paymentStatus} />
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 truncate max-w-[60%]">
-                      {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[60%]">
+                      {inv.invoiceType === 'purchase' ? '🏢 ' : '👤 '}
+                      {inv.customerSnapshot?.name || inv.customerId?.name || (inv.invoiceType === 'purchase' ? 'Company Name' : 'Customer')}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-slate-500 dark:text-slate-400">
                       Due: {formatDate(inv.dueDate)}
                     </span>
                   </div>

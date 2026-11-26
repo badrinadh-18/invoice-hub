@@ -63,6 +63,12 @@ const invoiceSchema = new mongoose.Schema(
       default: 'draft',
       index: true
     },
+    invoiceType: {
+      type: String,
+      enum: ['sale', 'purchase'],
+      default: 'sale',
+      index: true
+    },
     issueDate: {
       type: Date,
       default: Date.now
@@ -175,6 +181,7 @@ const invoiceSchema = new mongoose.Schema(
 
 // Compound unique index ensuring invoice numbers are unique per owner
 invoiceSchema.index({ ownerId: 1, invoiceNumber: 1 }, { unique: true });
+invoiceSchema.index({ ownerId: 1, invoiceType: 1 });
 invoiceSchema.index({ ownerId: 1, issueDate: -1 });
 invoiceSchema.index({ ownerId: 1, dueDate: 1 });
 invoiceSchema.index({ ownerId: 1, lifecycleState: 1 });

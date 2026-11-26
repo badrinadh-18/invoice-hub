@@ -31,10 +31,10 @@ export default function InvoiceList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-
 
   // Action states
   const [paymentInvoice, setPaymentInvoice] = useState(null);
@@ -47,6 +47,9 @@ export default function InvoiceList() {
       let url = `/invoices?page=${page}&limit=10&search=${encodeURIComponent(search)}`;
       if (statusFilter !== 'all') {
         url += `&status=${statusFilter}`;
+      }
+      if (typeFilter !== 'all') {
+        url += `&type=${typeFilter}`;
       }
       const res = await api.get(url);
       setInvoices(res.data.data);
@@ -61,7 +64,7 @@ export default function InvoiceList() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, typeFilter]);
 
   const handleDeleteDraft = async () => {
     if (!deleteTarget) return;
@@ -99,15 +102,53 @@ export default function InvoiceList() {
           </p>
         </div>
 
-        <Link to="/invoices/new">
-          <Button variant="primary" icon={PlusCircle}>
-            Create Invoice
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/invoices/new?type=sale">
+            <Button variant="primary" icon={PlusCircle}>
+              New Sale
+            </Button>
+          </Link>
+          <Link to="/invoices/new?type=purchase">
+            <Button
+              variant="secondary"
+              icon={PlusCircle}
+              className="border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+            >
+              New Purchase
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
       <Card noPadding className="p-4 space-y-3">
+        {/* Bill Type Selector Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 overflow-x-auto">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">Type:</span>
+          {[
+            { label: 'All Bills', value: 'all' },
+            { label: '🏷️ Sales Only', value: 'sale' },
+            { label: '📦 Purchases Only', value: 'purchase' }
+          ].map((t) => (
+            <button
+              key={t.value}
+              onClick={() => {
+                setTypeFilter(t.value);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                typeFilter === t.value
+                  ? t.value === 'purchase'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-brand-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -118,8 +159,8 @@ export default function InvoiceList() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search by invoice number or customer name..."
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              placeholder="Search by invoice number, company, or customer name..."
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
             />
           </div>
 
@@ -153,11 +194,11 @@ export default function InvoiceList() {
           <div>
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-700">
-                <thead className="bg-slate-50/70 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50/70 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-5 py-3">Invoice Number</th>
-                    <th className="px-5 py-3">Customer</th>
+                    <th className="px-5 py-3">Number / Type</th>
+                    <th className="px-5 py-3">Customer / Company</th>
                     <th className="px-5 py-3">Issue Date</th>
                     <th className="px-5 py-3">Due Date</th>
                     <th className="px-5 py-3 text-right">Grand Total</th>
@@ -166,27 +207,43 @@ export default function InvoiceList() {
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {invoices.map((inv) => (
-                    <tr key={inv._id} className="hover:bg-slate-50/80 transition">
-                      <td className="px-5 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
-                        <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700">
-                          {inv.invoiceNumber}
-                        </Link>
+                    <tr key={inv._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Link to={`/invoices/${inv._id}`} className="hover:text-brand-700 dark:hover:text-brand-400">
+                            {inv.invoiceNumber}
+                          </Link>
+                          {inv.invoiceType === 'purchase' ? (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              PUR
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                              SALE
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-800 font-medium">
-                        {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                      <td className="px-5 py-3.5 text-slate-800 dark:text-slate-200 font-medium">
+                        <div>
+                          <p>{inv.customerSnapshot?.name || inv.customerId?.name || (inv.invoiceType === 'purchase' ? 'Company Name' : 'Customer')}</p>
+                          {inv.customerSnapshot?.phone && (
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">{inv.customerSnapshot.phone}</p>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                         {formatDate(inv.issueDate)}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                         {formatDate(inv.dueDate)}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-slate-900 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-right font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                         {formatCurrency(inv.grandTotal, inv.currency)}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-medium text-amber-700 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-right font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap">
                         {formatCurrency(inv.balanceDue, inv.currency)}
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
@@ -197,7 +254,7 @@ export default function InvoiceList() {
                           {/* View details */}
                           <Link
                             to={`/invoices/${inv._id}`}
-                            className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded-lg transition"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-brand-700 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
                             title="View Invoice"
                           >
                             <Eye className="w-4 h-4" />
@@ -206,7 +263,7 @@ export default function InvoiceList() {
                           {/* WhatsApp share */}
                           <button
                             onClick={() => shareViaWhatsApp(inv)}
-                            className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition"
                             title="Share via WhatsApp"
                           >
                             <MessageCircle className="w-4 h-4" />
@@ -216,7 +273,7 @@ export default function InvoiceList() {
                           {inv.lifecycleState === 'issued' && (
                             <button
                               onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
-                              className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded-lg transition"
+                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-brand-700 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
                               title="Download PDF"
                             >
                               <Download className="w-4 h-4" />
@@ -227,7 +284,7 @@ export default function InvoiceList() {
                           {inv.lifecycleState === 'issued' && inv.balanceDue > 0 && (
                             <button
                               onClick={() => setPaymentInvoice(inv)}
-                              className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                              className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition"
                               title="Record Payment"
                             >
                               <CreditCard className="w-4 h-4" />
@@ -238,7 +295,7 @@ export default function InvoiceList() {
                           {inv.lifecycleState !== 'void' && (
                             <Link
                               to={`/invoices/${inv._id}/edit`}
-                              className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded-lg transition"
+                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-brand-700 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
                               title="Edit Invoice"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -249,21 +306,12 @@ export default function InvoiceList() {
                           {inv.lifecycleState === 'draft' && (
                             <button
                               onClick={() => setDeleteTarget(inv)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
                               title="Delete Draft"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
-
-                          {/* WhatsApp share */}
-                          <button
-                            onClick={() => shareViaWhatsApp(inv)}
-                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
-                            title="Share via WhatsApp"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -273,40 +321,50 @@ export default function InvoiceList() {
             </div>
 
             {/* Mobile Card List View */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
               {invoices.map((inv) => (
-                <div key={inv._id} className="p-3.5 space-y-2.5 hover:bg-slate-50/70 transition">
+                <div key={inv._id} className="p-3.5 space-y-2.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                   <div className="flex items-center justify-between">
-                    <Link
-                      to={`/invoices/${inv._id}`}
-                      className="font-bold text-sm text-brand-700 hover:underline flex items-center gap-1.5"
-                    >
-                      {inv.invoiceNumber}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/invoices/${inv._id}`}
+                        className="font-bold text-sm text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-1.5"
+                      >
+                        {inv.invoiceNumber}
+                      </Link>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                        inv.invoiceType === 'purchase'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800'
+                      }`}>
+                        {inv.invoiceType === 'purchase' ? 'Purchase' : 'Sale'}
+                      </span>
+                    </div>
                     <StatusBadge status={inv.paymentStatus} />
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 truncate max-w-[65%]">
-                      {inv.customerSnapshot?.name || inv.customerId?.name || 'Customer'}
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[65%]">
+                      {inv.invoiceType === 'purchase' ? '🏢 ' : '👤 '}
+                      {inv.customerSnapshot?.name || inv.customerId?.name || (inv.invoiceType === 'purchase' ? 'Company Name' : 'Customer')}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-slate-500 dark:text-slate-400">
                       Due: {formatDate(inv.dueDate)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-50 dark:border-slate-800">
                     <div>
-                      <p className="text-[11px] text-slate-400">Total</p>
-                      <p className="font-bold text-sm text-slate-900">
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">Total</p>
+                      <p className="font-bold text-sm text-slate-900 dark:text-white">
                         {formatCurrency(inv.grandTotal, inv.currency)}
                       </p>
                     </div>
 
                     {inv.balanceDue > 0 && (
                       <div className="text-right">
-                        <p className="text-[11px] text-amber-600">Balance Due</p>
-                        <p className="font-bold text-sm text-amber-700">
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400">Balance Due</p>
+                        <p className="font-bold text-sm text-amber-700 dark:text-amber-300">
                           {formatCurrency(inv.balanceDue, inv.currency)}
                         </p>
                       </div>

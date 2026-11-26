@@ -7,18 +7,19 @@ import { generateInvoicePDF } from '../services/pdfService.js';
 import { logAuditEvent } from '../services/auditService.js';
 
 // Helper to generate a sequential unique invoice number for a user
-const generateNextInvoiceNumber = async (ownerId) => {
-  const count = await Invoice.countDocuments({ ownerId });
+const generateNextInvoiceNumber = async (ownerId, invoiceType = 'sale') => {
+  const prefix = invoiceType === 'purchase' ? 'PUR' : 'INV';
+  const count = await Invoice.countDocuments({ ownerId, invoiceType });
   const year = new Date().getFullYear();
   const month = String(new Date().getMonth() + 1).padStart(2, '0');
   const sequence = String(count + 1).padStart(4, '0');
-  let invoiceNumber = `INV-${year}${month}-${sequence}`;
+  let invoiceNumber = `${prefix}-${year}${month}-${sequence}`;
 
   // Ensure uniqueness
   let exists = await Invoice.findOne({ ownerId, invoiceNumber });
   let offset = 1;
   while (exists) {
-    invoiceNumber = `INV-${year}${month}-${String(count + 1 + offset).padStart(4, '0')}`;
+    invoiceNumber = `${prefix}-${year}${month}-${String(count + 1 + offset).padStart(4, '0')}`;
     exists = await Invoice.findOne({ ownerId, invoiceNumber });
     offset++;
   }
@@ -30,9 +31,14 @@ export const getInvoices = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
     const limit = Math.max(1, Math.min(100, parseInt(req.query.limit || '20', 10)));
-    const { status, search, startDate, endDate, sort = '-createdAt' } = req.query;
+    const { status, type, invoiceType, search, startDate, endDate, sort = '-createdAt' } = req.query;
 
     const query = { ownerId: req.user._id };
+
+    const selectedType = invoiceType || type;
+    if (selectedType && selectedType !== 'all') {
+      query.invoiceType = selectedType;
+    }
 
     if (status && status !== 'all') {
       query.paymentStatus = status;
@@ -136,8 +142,11 @@ export const createInvoice = async (req, res, next) => {
       additionalCharges = 0,
       notes = '',
       terms = '',
-      issueImmediately = false
+      issueImmediately = false,
+      invoiceType = 'sale'
     } = req.body;
+
+    const normalizedType = invoiceType === 'purchase' ? 'purchase' : 'sale';
 
     let customer = null;
     let customerSnapshot = {
@@ -200,7 +209,7 @@ export const createInvoice = async (req, res, next) => {
       amountPaid: 0
     });
 
-    const invoiceNumber = await generateNextInvoiceNumber(req.user._id);
+    const invoiceNumber = await generateNextInvoiceNumber(req.user._id, normalizedType);
 
     const calcDueDate = dueDate ? new Date(dueDate) : new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
 
@@ -214,6 +223,7 @@ export const createInvoice = async (req, res, next) => {
       customerId: customer ? customer._id : undefined,
       invoiceNumber,
       lifecycleState,
+      invoiceType: normalizedType,
       issueDate: new Date(),
       dueDate: calcDueDate,
       currency: (currency || businessProfile?.defaultCurrency || 'INR').toUpperCase(),
@@ -296,8 +306,13 @@ export const updateInvoice = async (req, res, next) => {
       terms,
       customerName,
       customerPhone,
-      customerAddress
+      customerAddress,
+      invoiceType
     } = req.body;
+
+    if (invoiceType) {
+      invoice.invoiceType = invoiceType === 'purchase' ? 'purchase' : 'sale';
+    }
 
     if (customerId) {
       const customer = await Customer.findOne({ _id: customerId, ownerId: req.user._id });

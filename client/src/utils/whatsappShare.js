@@ -10,22 +10,25 @@ export const generateWhatsAppShareMessage = (invoice) => {
   const seller = invoice.sellerSnapshot || {};
   const customer = invoice.customerSnapshot || {};
   const businessName = seller.businessName || 'Our Business';
-  const customerName = customer.name || 'Valued Customer';
-  const invNumber = invoice.invoiceNumber || 'INV';
+  const isPurchase = invoice.invoiceType === 'purchase';
+  const docType = isPurchase ? 'PURCHASE BILL' : 'INVOICE';
+  const partyLabel = isPurchase ? 'Company / Vendor' : 'Customer';
+  const recipientName = customer.name || (isPurchase ? 'Company Name' : 'Valued Customer');
+  const invNumber = invoice.invoiceNumber || (isPurchase ? 'PUR' : 'INV');
   const amount = formatCurrency(invoice.balanceDue ?? invoice.grandTotal, invoice.currency || 'INR');
   const dueDate = invoice.dueDate ? formatDate(invoice.dueDate) : 'On Receipt';
   const status = (invoice.paymentStatus || 'unpaid').toUpperCase();
 
   return [
-    `📄 *INVOICE FROM ${businessName.toUpperCase()}*`,
+    `📄 *${docType} FROM ${businessName.toUpperCase()}*`,
     `--------------------------------`,
-    `*Invoice #:* ${invNumber}`,
-    `*Customer:* ${customerName}`,
+    `*${isPurchase ? 'Bill #' : 'Invoice #'}:* ${invNumber}`,
+    `*${partyLabel}:* ${recipientName}`,
     `*Total / Balance Due:* ${amount}`,
     `*Due Date:* ${dueDate}`,
     `*Status:* ${status}`,
     `--------------------------------`,
-    `Thank you for your business!`
+    isPurchase ? `Purchase bill registered in InvoiceHub.` : `Thank you for your business!`
   ].join('\n');
 };
 

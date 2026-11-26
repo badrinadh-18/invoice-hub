@@ -42,12 +42,6 @@ export default function Login() {
     }
   };
 
-  const handleQuickFill = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrorMsg('');
-  };
-
   return (
     <div className="min-h-[80vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
@@ -155,29 +149,6 @@ export default function Login() {
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </form>
-
-          {/* Quick Demo Credentials for Fast Evaluation */}
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block text-center mb-3">
-              One-Click Demo Credentials
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('demo@invoicehub.local', 'Password@123')}
-                className="text-xs py-2 px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-center transition"
-              >
-                👤 Regular User
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@invoicehub.local', 'Admin@InvoiceHub2026')}
-                className="text-xs py-2 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium text-center transition"
-              >
-                🛡️ Administrator
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

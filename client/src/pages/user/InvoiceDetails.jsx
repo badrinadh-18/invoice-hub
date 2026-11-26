@@ -37,7 +37,6 @@ export default function InvoiceDetails() {
 
   // Modals & Action states
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [voidModalOpen, setVoidModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -71,20 +70,6 @@ export default function InvoiceDetails() {
       fetchInvoice();
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to issue invoice.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleVoidInvoice = async () => {
-    try {
-      setActionLoading(true);
-      await api.post(`/invoices/${id}/void`, { reason: 'User cancelled invoice' });
-      toast.success('Invoice marked as void.');
-      setVoidModalOpen(false);
-      fetchInvoice();
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to void invoice.');
     } finally {
       setActionLoading(false);
     }
@@ -232,11 +217,11 @@ export default function InvoiceDetails() {
             </Button>
           )}
 
-          {/* Edit Draft */}
-          {isDraft && (
+          {/* Edit Invoice (available for all active invoices) */}
+          {invoice.lifecycleState !== 'void' && (
             <Link to={`/invoices/${invoice._id}/edit`}>
               <Button variant="secondary" icon={Edit2} size="sm">
-                Edit Draft
+                Edit Invoice
               </Button>
             </Link>
           )}
@@ -252,38 +237,26 @@ export default function InvoiceDetails() {
               Delete
             </Button>
           )}
-
-          {/* Void Issued */}
-          {isIssued && (
-            <Button
-              variant="secondary"
-              icon={Ban}
-              size="sm"
-              onClick={() => setVoidModalOpen(true)}
-            >
-              Void
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Branded Printable Invoice Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-10 print-card space-y-8">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-10 print-card space-y-8 transition-colors duration-150">
         {/* Document Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 dark:border-slate-800 pb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-brand-700 flex items-center justify-center text-white">
                 <Receipt className="w-4 h-4" />
               </div>
-              <span className="font-extrabold text-xl text-slate-900 tracking-tight">
-                INVOICE<span className="text-brand-700">HUB</span>
+              <span className="font-extrabold text-xl text-slate-900 dark:text-white tracking-tight">
+                INVOICE<span className="text-brand-700 dark:text-brand-400">HUB</span>
               </span>
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {seller.businessName || 'Business Name'}
             </h2>
-            <div className="text-xs text-slate-500 space-y-0.5 mt-1">
+            <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 mt-1">
               {seller.address && <p>{seller.address}</p>}
               {(seller.city || seller.state || seller.postalCode) && (
                 <p>{`${seller.city || ''} ${seller.state || ''} ${seller.postalCode || ''}`.trim()}</p>
@@ -296,52 +269,56 @@ export default function InvoiceDetails() {
           </div>
 
           <div className="sm:text-right">
-            <span className="text-xs uppercase tracking-widest font-bold text-brand-700 block mb-1">
+            <span className="text-xs uppercase tracking-widest font-bold text-brand-700 dark:text-brand-400 block mb-1">
               INVOICE
             </span>
-            <p className="text-2xl font-extrabold text-slate-900">{invoice.invoiceNumber}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{invoice.invoiceNumber}</p>
 
-            <div className="mt-3 text-xs text-slate-600 space-y-1">
+            <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 space-y-1">
               <div className="flex sm:justify-end gap-2">
-                <span className="text-slate-400">Issue Date:</span>
-                <span className="font-semibold text-slate-800">{formatDate(invoice.issueDate)}</span>
+                <span className="text-slate-400 dark:text-slate-500">Issue Date:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(invoice.issueDate)}</span>
               </div>
               <div className="flex sm:justify-end gap-2">
-                <span className="text-slate-400">Due Date:</span>
-                <span className="font-semibold text-slate-800">{formatDate(invoice.dueDate)}</span>
+                <span className="text-slate-400 dark:text-slate-500">Due Date:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(invoice.dueDate)}</span>
               </div>
               <div className="flex sm:justify-end gap-2">
-                <span className="text-slate-400">Currency:</span>
-                <span className="font-semibold text-slate-800">{invoice.currency}</span>
+                <span className="text-slate-400 dark:text-slate-500">Currency:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{invoice.currency}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bill To Customer Section */}
-        <div className="border-b border-slate-100 pb-6">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+        <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1.5">
             Bill To:
           </span>
-          <h3 className="text-base font-bold text-slate-900">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
             {customer.name || 'Valued Customer'}
           </h3>
-          <div className="text-xs text-slate-500 space-y-0.5 mt-1">
+          <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 mt-1">
             {customer.billingAddress && <p>{customer.billingAddress}</p>}
             {(customer.city || customer.state || customer.postalCode) && (
               <p>{`${customer.city || ''} ${customer.state || ''} ${customer.postalCode || ''}`.trim()}</p>
             )}
             {customer.country && <p>{customer.country}</p>}
             {customer.email && <p>Email: {customer.email}</p>}
-            {customer.phone && <p>Phone: {customer.phone}</p>}
+            {customer.phone && (
+              <p className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                WhatsApp / Phone: {customer.phone}
+              </p>
+            )}
             {customer.taxId && <p>Tax ID: {customer.taxId}</p>}
           </div>
         </div>
 
         {/* Desktop Line Items Table */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-y border-slate-200">
+          <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-y border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3">Description</th>
                 <th className="px-4 py-3 text-right">Quantity</th>
@@ -350,18 +327,18 @@ export default function InvoiceDetails() {
                 <th className="px-4 py-3 text-right">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {invoice.items?.map((item, index) => (
                 <tr key={index}>
-                  <td className="px-4 py-3 font-medium text-slate-900">{item.description}</td>
-                  <td className="px-4 py-3 text-right text-slate-600">{item.quantity}</td>
-                  <td className="px-4 py-3 text-right text-slate-600">
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{item.description}</td>
+                  <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">{item.quantity}</td>
+                  <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                     {formatCurrency(item.unitPrice, invoice.currency)}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-500">
+                  <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
                     {item.taxRate > 0 ? `${item.taxRate}%` : '-'}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                  <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white">
                     {formatCurrency(item.lineSubtotal, invoice.currency)}
                   </td>
                 </tr>
@@ -371,16 +348,16 @@ export default function InvoiceDetails() {
         </div>
 
         {/* Mobile Line Items View */}
-        <div className="md:hidden divide-y divide-slate-100 border-y border-slate-200">
+        <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-200 dark:border-slate-800">
           {invoice.items?.map((item, index) => (
             <div key={index} className="py-3 space-y-1">
               <div className="flex justify-between items-start">
-                <span className="font-semibold text-sm text-slate-900">{item.description}</span>
-                <span className="font-bold text-sm text-slate-900">
+                <span className="font-semibold text-sm text-slate-900 dark:text-white">{item.description}</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-white">
                   {formatCurrency(item.lineSubtotal, invoice.currency)}
                 </span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   {item.quantity} × {formatCurrency(item.unitPrice, invoice.currency)}
                 </span>
@@ -393,59 +370,59 @@ export default function InvoiceDetails() {
         {/* Totals Breakdown */}
         <div className="flex justify-end pt-4">
           <div className="w-full sm:w-72 space-y-2 text-xs sm:text-sm">
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-slate-600 dark:text-slate-400">
               <span>Subtotal:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 {formatCurrency(invoice.subtotal, invoice.currency)}
               </span>
             </div>
 
             {invoice.discountAmount > 0 && (
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>
                   Discount ({invoice.discountType === 'percentage' ? `${invoice.discountValue}%` : 'Fixed'}):
                 </span>
-                <span className="text-rose-600 font-medium">
+                <span className="text-rose-600 dark:text-rose-400 font-medium">
                   -{formatCurrency(invoice.discountAmount, invoice.currency)}
                 </span>
               </div>
             )}
 
             {invoice.taxTotal > 0 && (
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Tax Total:</span>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   +{formatCurrency(invoice.taxTotal, invoice.currency)}
                 </span>
               </div>
             )}
 
             {invoice.additionalCharges > 0 && (
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Other Charges:</span>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   +{formatCurrency(invoice.additionalCharges, invoice.currency)}
                 </span>
               </div>
             )}
 
-            <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-base text-slate-900">
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between font-bold text-base text-slate-900 dark:text-white">
               <span>Grand Total:</span>
-              <span className="text-brand-700">
+              <span className="text-brand-700 dark:text-brand-400">
                 {formatCurrency(invoice.grandTotal, invoice.currency)}
               </span>
             </div>
 
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-slate-600 dark:text-slate-400">
               <span>Amount Paid:</span>
-              <span className="font-semibold text-emerald-600">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(invoice.amountPaid, invoice.currency)}
               </span>
             </div>
 
-            <div className="bg-teal-50 border border-teal-200 p-2.5 rounded-lg flex justify-between font-bold text-sm text-teal-900">
+            <div className="bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 p-2.5 rounded-lg flex justify-between font-bold text-sm text-teal-900 dark:text-teal-200">
               <span>Balance Due:</span>
-              <span className="text-brand-800">
+              <span className="text-brand-800 dark:text-brand-300">
                 {formatCurrency(invoice.balanceDue, invoice.currency)}
               </span>
             </div>
@@ -454,21 +431,21 @@ export default function InvoiceDetails() {
 
         {/* Notes & Terms */}
         {(invoice.notes || invoice.terms) && (
-          <div className="border-t border-slate-100 pt-6 text-xs text-slate-500 space-y-3">
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6 text-xs text-slate-500 dark:text-slate-400 space-y-3">
             {invoice.notes && (
               <div>
-                <span className="font-semibold text-slate-700 uppercase tracking-wider block mb-0.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-0.5">
                   Payment Instructions & Notes:
                 </span>
-                <p className="whitespace-pre-line text-slate-600">{invoice.notes}</p>
+                <p className="whitespace-pre-line text-slate-600 dark:text-slate-400">{invoice.notes}</p>
               </div>
             )}
             {invoice.terms && (
               <div>
-                <span className="font-semibold text-slate-700 uppercase tracking-wider block mb-0.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-0.5">
                   Terms & Conditions:
                 </span>
-                <p className="whitespace-pre-line text-slate-600">{invoice.terms}</p>
+                <p className="whitespace-pre-line text-slate-600 dark:text-slate-400">{invoice.terms}</p>
               </div>
             )}
           </div>
@@ -485,8 +462,8 @@ export default function InvoiceDetails() {
           >
             {payments.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-700">
-                  <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                     <tr>
                       <th className="px-5 py-3">Date</th>
                       <th className="px-5 py-3">Method</th>
@@ -495,21 +472,21 @@ export default function InvoiceDetails() {
                       <th className="px-5 py-3 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {payments.map((p) => (
                       <tr key={p._id}>
-                        <td className="px-5 py-3 text-slate-900 font-medium">
+                        <td className="px-5 py-3 text-slate-900 dark:text-white font-medium">
                           {formatDate(p.paymentDate)}
                         </td>
-                        <td className="px-5 py-3 text-slate-700">{p.method}</td>
-                        <td className="px-5 py-3 text-slate-500 text-xs font-mono">
+                        <td className="px-5 py-3 text-slate-700 dark:text-slate-300">{p.method}</td>
+                        <td className="px-5 py-3 text-slate-500 dark:text-slate-400 text-xs font-mono">
                           {p.reference || '-'}
                         </td>
-                        <td className="px-5 py-3 text-right font-semibold text-emerald-700">
+                        <td className="px-5 py-3 text-right font-semibold text-emerald-700 dark:text-emerald-400">
                           {formatCurrency(p.amount, p.currency)}
                         </td>
                         <td className="px-5 py-3 text-center">
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             {p.status}
                           </span>
                         </td>
@@ -519,7 +496,7 @@ export default function InvoiceDetails() {
                 </table>
               </div>
             ) : (
-              <div className="p-6 text-center text-sm text-slate-400">
+              <div className="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
                 No payments recorded yet. Click "Record Payment" above to register funds.
               </div>
             )}
@@ -534,34 +511,6 @@ export default function InvoiceDetails() {
         invoice={invoice}
         onSuccess={fetchInvoice}
       />
-
-      {/* Void Confirmation Modal */}
-      <Modal
-        isOpen={voidModalOpen}
-        onClose={() => setVoidModalOpen(false)}
-        title="Void Invoice"
-        subtitle={`Invoice ${invoice.invoiceNumber}`}
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs sm:text-sm">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-900">Confirm Invalidation</p>
-              Are you sure you want to void this invoice? This action cannot be reversed.
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setVoidModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" loading={actionLoading} onClick={handleVoidInvoice}>
-              Confirm Void
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Delete Draft Modal */}
       <Modal

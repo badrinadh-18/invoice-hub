@@ -123,7 +123,7 @@ export default function CustomerModal({ isOpen, onClose, customer, onSuccess }) 
               Phone Number
             </label>
             <div className="relative flex rounded-lg shadow-sm">
-              <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 text-slate-700 text-sm font-medium select-none">
+              <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium select-none">
                 🇮🇳 +91
               </span>
               <input

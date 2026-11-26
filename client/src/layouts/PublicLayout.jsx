@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Receipt, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function PublicLayout() {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -37,8 +36,6 @@ export default function PublicLayout() {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <ThemeToggle />
-
             {isAuthenticated ? (
               <Link
                 to={isAdmin ? "/admin/dashboard" : "/dashboard"}

@@ -35,9 +35,9 @@ export default function InvoiceList() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+
   // Action states
   const [paymentInvoice, setPaymentInvoice] = useState(null);
-  const [voidTarget, setVoidTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -62,21 +62,6 @@ export default function InvoiceList() {
   useEffect(() => {
     fetchInvoices();
   }, [page, search, statusFilter]);
-
-  const handleVoidInvoice = async () => {
-    if (!voidTarget) return;
-    try {
-      setActionLoading(true);
-      await api.post(`/invoices/${voidTarget._id}/void`, { reason: 'User marked as void' });
-      toast.success('Invoice voided successfully.');
-      setVoidTarget(null);
-      fetchInvoices();
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to void invoice.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleDeleteDraft = async () => {
     if (!deleteTarget) return;
@@ -146,11 +131,10 @@ export default function InvoiceList() {
                   setStatusFilter(s.value);
                   setPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                  statusFilter === s.value
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${statusFilter === s.value
                     ? 'bg-brand-700 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                  }`}
               >
                 {s.label}
               </button>
@@ -250,12 +234,12 @@ export default function InvoiceList() {
                             </button>
                           )}
 
-                          {/* Edit (only if draft) */}
-                          {inv.lifecycleState === 'draft' && (
+                          {/* Edit (available for all active invoices) */}
+                          {inv.lifecycleState !== 'void' && (
                             <Link
                               to={`/invoices/${inv._id}/edit`}
                               className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded-lg transition"
-                              title="Edit Draft"
+                              title="Edit Invoice"
                             >
                               <Edit2 className="w-4 h-4" />
                             </Link>
@@ -272,25 +256,14 @@ export default function InvoiceList() {
                             </button>
                           )}
 
-                          {/* Void (only if issued) */}
                           {/* WhatsApp share */}
-                    <button
-                      onClick={() => shareViaWhatsApp(inv)}
-                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
-                      title="Share via WhatsApp"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-
-                    {inv.lifecycleState === 'issued' && (
-                            <button
-                              onClick={() => setVoidTarget(inv)}
-                              className="p-1.5 text-slate-400 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
-                              title="Void Invoice"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => shareViaWhatsApp(inv)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
+                            title="Share via WhatsApp"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -378,7 +351,7 @@ export default function InvoiceList() {
                       </button>
                     )}
 
-                    {inv.lifecycleState === 'draft' && (
+                    {inv.lifecycleState !== 'void' && (
                       <Link
                         to={`/invoices/${inv._id}/edit`}
                         className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 border border-brand-200"
@@ -404,16 +377,6 @@ export default function InvoiceList() {
                     >
                       <MessageCircle className="w-4 h-4" />
                     </button>
-
-                    {inv.lifecycleState === 'issued' && (
-                      <button
-                        onClick={() => setVoidTarget(inv)}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
-                        title="Void"
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
@@ -478,34 +441,6 @@ export default function InvoiceList() {
         invoice={paymentInvoice}
         onSuccess={fetchInvoices}
       />
-
-      {/* Void Confirmation Modal */}
-      <Modal
-        isOpen={!!voidTarget}
-        onClose={() => setVoidTarget(null)}
-        title="Void Invoice"
-        subtitle={`Invoice ${voidTarget?.invoiceNumber}`}
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs sm:text-sm">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-900">Irreversible Action</p>
-              Are you sure you want to void this invoice? Voiding marks the bill as invalidated while preserving its record in the audit trail.
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setVoidTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="danger" loading={actionLoading} onClick={handleVoidInvoice}>
-              Confirm Void
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Delete Draft Confirmation Modal */}
       <Modal

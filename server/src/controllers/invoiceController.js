@@ -140,7 +140,11 @@ export const createInvoice = async (req, res, next) => {
     } = req.body;
 
     let customer = null;
-    let customerSnapshot = {};
+    let customerSnapshot = {
+      name: req.body.customerName || '',
+      phone: req.body.customerPhone || '',
+      billingAddress: req.body.customerAddress || ''
+    };
     if (customerId) {
       customer = await Customer.findOne({ _id: customerId, ownerId: req.user._id });
       if (!customer) {
@@ -152,16 +156,20 @@ export const createInvoice = async (req, res, next) => {
         });
       }
       customerSnapshot = {
-        name: customer.name,
+        name: req.body.customerName || customer.name,
         email: customer.email,
-        phone: customer.phone,
-        billingAddress: customer.billingAddress,
+        phone: req.body.customerPhone || customer.phone,
+        billingAddress: req.body.customerAddress || customer.billingAddress,
         city: customer.city,
         state: customer.state,
         postalCode: customer.postalCode,
         country: customer.country,
         taxId: customer.taxId
       };
+      if (req.body.customerPhone && customer.phone !== req.body.customerPhone) {
+        customer.phone = req.body.customerPhone;
+        customer.save().catch(() => {});
+      }
     }
 
     const businessProfile = await BusinessProfile.findOne({ ownerId: req.user._id });
@@ -266,11 +274,11 @@ export const updateInvoice = async (req, res, next) => {
       });
     }
 
-    if (invoice.lifecycleState !== 'draft') {
+    if (invoice.lifecycleState === 'void') {
       return res.status(400).json({
         error: {
           code: 'INVOICE_NOT_EDITABLE',
-          message: 'Issued or void invoices cannot be modified directly. Please create an adjustment or void.'
+          message: 'Void invoices cannot be modified.'
         }
       });
     }
@@ -285,7 +293,10 @@ export const updateInvoice = async (req, res, next) => {
       taxRate,
       additionalCharges,
       notes,
-      terms
+      terms,
+      customerName,
+      customerPhone,
+      customerAddress
     } = req.body;
 
     if (customerId) {
@@ -300,15 +311,32 @@ export const updateInvoice = async (req, res, next) => {
       }
       invoice.customerId = customer._id;
       invoice.customerSnapshot = {
-        name: customer.name,
+        name: customerName || customer.name,
         email: customer.email,
-        phone: customer.phone,
-        billingAddress: customer.billingAddress,
+        phone: customerPhone || customer.phone,
+        billingAddress: customerAddress || customer.billingAddress,
         city: customer.city,
         state: customer.state,
         postalCode: customer.postalCode,
         country: customer.country,
         taxId: customer.taxId
+      };
+      if (customerPhone && customer.phone !== customerPhone) {
+        customer.phone = customerPhone;
+        customer.save().catch(() => {});
+      }
+    } else if (customerName || customerPhone || customerAddress) {
+      const currentSnap = invoice.customerSnapshot || {};
+      invoice.customerSnapshot = {
+        name: customerName || currentSnap.name || '',
+        email: currentSnap.email || '',
+        phone: customerPhone !== undefined ? customerPhone : currentSnap.phone || '',
+        billingAddress: customerAddress !== undefined ? customerAddress : currentSnap.billingAddress || '',
+        city: currentSnap.city || '',
+        state: currentSnap.state || '',
+        postalCode: currentSnap.postalCode || '',
+        country: currentSnap.country || '',
+        taxId: currentSnap.taxId || ''
       };
     }
 

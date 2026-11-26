@@ -11,10 +11,10 @@ import {
   X,
   Shield,
   Receipt,
-  ChevronDown
+  ChevronDown,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function UserLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -31,7 +31,7 @@ export default function UserLayout() {
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Invoices', to: '/invoices', icon: FileText },
     { name: 'Customers', to: '/customers', icon: Users },
-    { name: 'Business Profile', to: '/business-profile', icon: Building2 },
+    { name: 'Settings', to: '/business-profile', icon: Settings },
   ];
 
   return (
@@ -183,9 +183,6 @@ export default function UserLayout() {
                 Admin Mode
               </Link>
             )}
-
-            {/* Dark Mode Toggle Button */}
-            <ThemeToggle />
 
             {/* Profile Dropdown */}
             <div className="relative">

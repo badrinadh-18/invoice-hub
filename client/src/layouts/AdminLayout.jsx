@@ -11,7 +11,6 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -133,7 +132,6 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <Link
               to="/dashboard"
               className="text-xs font-medium text-brand-700 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-300 transition flex items-center gap-1"

@@ -181,12 +181,12 @@ export default function CustomerList() {
             </div>
 
             {/* Mobile Card List View */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
               {customers.map((c) => (
-                <div key={c._id} className="p-3.5 space-y-2 hover:bg-slate-50/70 transition">
+                <div key={c._id} className="p-3.5 space-y-2 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900">{c.name}</h3>
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{c.name}</h3>
                       {c.taxId && (
                         <p className="text-[11px] text-slate-400 font-mono">Tax ID: {c.taxId}</p>
                       )}
@@ -194,14 +194,14 @@ export default function CustomerList() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenEdit(c)}
-                        className="p-1.5 text-slate-600 hover:text-brand-700 bg-slate-100 rounded-lg"
+                        className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-700 bg-slate-100 dark:bg-slate-800 rounded-lg"
                         title="Edit Customer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(c)}
-                        className="p-1.5 text-rose-500 hover:bg-rose-50 bg-slate-100 rounded-lg"
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 bg-slate-100 dark:bg-slate-800 rounded-lg"
                         title="Delete Customer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -209,7 +209,7 @@ export default function CustomerList() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-600 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-600 dark:text-slate-400 pt-1">
                     {c.email && (
                       <div className="flex items-center gap-1.5 truncate">
                         <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />

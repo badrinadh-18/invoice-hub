@@ -329,14 +329,14 @@ export default function Dashboard() {
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             to={`/invoices/${inv._id}`}
-                            className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition"
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
                           >
                             View
                           </Link>
                           {inv.lifecycleState === 'issued' && (
                             <button
                               onClick={() => downloadInvoicePdf(inv._id, inv.invoiceNumber)}
-                              className="p-1 text-slate-400 hover:text-brand-700 transition"
+                              className="p-1 text-slate-400 hover:text-brand-700 dark:hover:text-brand-400 transition"
                               title="Download PDF"
                             >
                               <Download className="w-4 h-4" />
@@ -351,9 +351,9 @@ export default function Dashboard() {
             </div>
 
             {/* Mobile Card List View (Clean & Responsive) */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
               {recentInvoices.map((inv) => (
-                <div key={inv._id} className="p-3.5 hover:bg-slate-50/70 transition space-y-2">
+                <div key={inv._id} className="p-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition space-y-2">
                   <div className="flex items-center justify-between">
                     <Link
                       to={`/invoices/${inv._id}`}

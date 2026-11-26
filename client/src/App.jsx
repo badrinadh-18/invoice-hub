@@ -2,7 +2,8 @@ import React, { useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapApp } from '@capacitor/app';
-import { AuthProvider } from './context/AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './routes/RouteGuards';
 
@@ -97,6 +98,32 @@ function MobileBackButtonHandler() {
   return null;
 }
 
+/**
+ * Root Route handler:
+ * - On Mobile Native App (Capacitor/Android): Bypasses the Landing Page completely.
+ *   Directs unauthenticated users to /login and authenticated users to /dashboard.
+ * - On Web Browser: Displays the full marketing Landing Page.
+ */
+function RootRoute() {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const isNativeApp =
+    Capacitor.isNativePlatform() ||
+    typeof window.AndroidDownloader !== 'undefined' ||
+    Boolean(window.Capacitor?.isNativePlatform?.());
+
+  if (isNativeApp) {
+    if (loading) {
+      return <PageFallback />;
+    }
+    if (isAuthenticated) {
+      return <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} replace />;
+    }
+    return <Navigate to="/login" replace />;
+  }
+
+  return <LandingPage />;
+}
+
 export default function App() {
   // Pre-warm the backend API as soon as the app opens in the background
   useEffect(() => {
@@ -139,7 +166,7 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route element={<PublicLayout />}>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<RootRoute />} />
               <Route
                 path="/login"
                 element={
@@ -170,6 +197,7 @@ export default function App() {
             >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/business-profile" element={<BusinessProfile />} />
+              <Route path="/settings" element={<Navigate to="/business-profile" replace />} />
               <Route path="/customers" element={<CustomerList />} />
               <Route path="/invoices" element={<InvoiceList />} />
               <Route path="/invoices/new" element={<InvoiceEditor />} />

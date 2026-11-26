@@ -25,6 +25,7 @@ export default function InvoiceEditor() {
   // Customer Direct Inputs
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
   // Dates & Financial State
@@ -63,13 +64,13 @@ export default function InvoiceEditor() {
           setCurrency(profile.defaultCurrency || 'INR');
         }
 
-        // If editing existing draft invoice
+        // If editing existing invoice
         if (id) {
           const invRes = await api.get(`/invoices/${id}`);
           const inv = invRes.data.data;
 
-          if (inv.lifecycleState !== 'draft') {
-            toast.error('Only draft invoices can be edited.');
+          if (inv.lifecycleState === 'void') {
+            toast.error('Void invoices cannot be edited.');
             navigate(`/invoices/${id}`);
             return;
           }
@@ -80,6 +81,7 @@ export default function InvoiceEditor() {
           const snap = inv.customerSnapshot || {};
           const matchedCust = custList.find((c) => c._id === existingCustId);
           setCustomerName(snap.name || matchedCust?.name || '');
+          setCustomerPhone(snap.phone || matchedCust?.phone || '');
           setCustomerAddress(snap.billingAddress || matchedCust?.billingAddress || '');
 
           if (inv.issueDate) setIssueDate(new Date(inv.issueDate).toISOString().split('T')[0]);
@@ -108,7 +110,7 @@ export default function InvoiceEditor() {
     initData();
   }, [id, navigate]);
 
-  // Handle direct customer name typing and auto-fill address if existing
+  // Handle direct customer name typing and auto-fill address & phone if existing
   const handleCustomerNameChange = (nameVal) => {
     setCustomerName(nameVal);
     const matched = customers.find(
@@ -116,6 +118,9 @@ export default function InvoiceEditor() {
     );
     if (matched) {
       setCustomerId(matched._id);
+      if (matched.phone && !customerPhone) {
+        setCustomerPhone(matched.phone);
+      }
       if (matched.billingAddress && !customerAddress) {
         setCustomerAddress(matched.billingAddress);
       }
@@ -215,11 +220,15 @@ export default function InvoiceEditor() {
         );
         if (matched) {
           resolvedCustomerId = matched._id;
+          if (customerPhone.trim() && !matched.phone) {
+            api.put(`/customers/${matched._id}`, { phone: customerPhone.trim() }).catch(() => {});
+          }
         } else {
-          // Seamlessly create the customer behind the scenes
+          // Seamlessly create the customer behind the scenes with phone & address
           try {
             const newCustRes = await api.post('/customers', {
               name: trimmedName,
+              phone: customerPhone.trim(),
               billingAddress: customerAddress.trim()
             });
             if (newCustRes.data?.data?._id) {
@@ -229,10 +238,15 @@ export default function InvoiceEditor() {
             console.warn('Customer auto-create fallback:', createErr);
           }
         }
+      } else if (customerPhone.trim()) {
+        api.put(`/customers/${resolvedCustomerId}`, { phone: customerPhone.trim() }).catch(() => {});
       }
 
       const payload = {
         customerId: resolvedCustomerId || undefined,
+        customerName: trimmedName,
+        customerPhone: customerPhone.trim(),
+        customerAddress: customerAddress.trim(),
         dueDate,
         currency,
         items: items.map((it) => ({
@@ -249,13 +263,13 @@ export default function InvoiceEditor() {
       };
 
       if (id) {
-        // Updating existing draft
+        // Updating existing invoice
         await api.put(`/invoices/${id}`, payload);
         if (issueImmediately) {
-          await api.post(`/invoices/${id}/issue`);
-          toast.success('Invoice issued successfully!');
+          await api.post(`/invoices/${id}/issue`).catch(() => {});
+          toast.success('Invoice updated and issued successfully!');
         } else {
-          toast.success('Draft invoice updated successfully!');
+          toast.success('Invoice updated successfully!');
         }
         navigate(`/invoices/${id}?created=1`);
       } else {
@@ -321,11 +335,11 @@ export default function InvoiceEditor() {
       </div>
 
       {/* Customer & Dates Section */}
-      <Card title="Customer Information" subtitle="Enter customer name, address, and invoice dates">
+      <Card title="Customer Information" subtitle="Enter customer name, phone number, address, and invoice dates">
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Customer Name *
               </label>
               <input
@@ -335,7 +349,7 @@ export default function InvoiceEditor() {
                 value={customerName}
                 onChange={(e) => handleCustomerNameChange(e.target.value)}
                 placeholder="Type customer or company name..."
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
               />
               <datalist id="customer-suggestions">
                 {customers.map((c) => (
@@ -345,7 +359,33 @@ export default function InvoiceEditor() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+                <span>Phone / WhatsApp Number</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">WhatsApp Share</span>
+              </label>
+              <div className="relative flex rounded-lg shadow-sm">
+                <span className="inline-flex items-center px-2.5 rounded-l-lg border border-r-0 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium select-none">
+                  🇮🇳 +91
+                </span>
+                <input
+                  type="tel"
+                  value={
+                    customerPhone.startsWith('+91')
+                      ? customerPhone.slice(3).trimStart()
+                      : customerPhone
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/^\+91\s*/, '');
+                    setCustomerPhone(raw ? `+91 ${raw}` : '');
+                  }}
+                  placeholder="98765 43210"
+                  className="w-full rounded-r-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Customer Address
               </label>
               <input
@@ -353,7 +393,7 @@ export default function InvoiceEditor() {
                 value={customerAddress}
                 onChange={(e) => setCustomerAddress(e.target.value)}
                 placeholder="e.g. 123 Business Way, Suite 400, City, State"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
               />
             </div>
           </div>
@@ -490,7 +530,7 @@ export default function InvoiceEditor() {
             const lineTotal = round2(qty * price);
 
             return (
-              <div key={index} className="p-3.5 space-y-3 bg-white">
+              <div key={index} className="p-3.5 space-y-3 bg-white dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold text-slate-500 uppercase">
                     Item #{index + 1}
@@ -594,7 +634,7 @@ export default function InvoiceEditor() {
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value)}
-                  className="text-xs rounded border border-slate-300 py-1 px-2 bg-white"
+                  className="text-xs rounded border border-slate-300 dark:border-slate-700 py-1 px-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                 >
                   <option value="percentage">% Pct</option>
                   <option value="fixed">Fixed</option>

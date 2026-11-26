@@ -69,6 +69,26 @@ html {
   .dark table tbody td {
     color: #cbd5e1 !important;
   }
+
+  /* Universal dark background and border overrides for seamless dark mode */
+  .dark .bg-white:not(.keep-white) {
+    background-color: #0f172a !important;
+    color: #f8fafc;
+  }
+
+  .dark .bg-slate-50:not(.keep-light) {
+    background-color: #0b1120 !important;
+  }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200 {
+    border-color: #1e293b !important;
+  }
+
+  .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #1e293b !important;
+  }
 }
 
 /* Touch scaling for mobile readability and input clarity */

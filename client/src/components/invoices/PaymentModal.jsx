@@ -108,7 +108,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, onSuccess }) {
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none bg-white"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none bg-white dark:bg-slate-800"
           >
             <option value="Bank Transfer">Bank Transfer / Wire</option>
             <option value="Cash">Cash</option>

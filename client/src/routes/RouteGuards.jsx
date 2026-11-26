@@ -9,7 +9,7 @@ export const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <LoadingSpinner text="Checking authentication session..." />
       </div>
     );
@@ -28,7 +28,7 @@ export const AdminRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <LoadingSpinner text="Verifying administrator clearance..." />
       </div>
     );
@@ -50,7 +50,7 @@ export const PublicOnlyRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <LoadingSpinner />
       </div>
     );

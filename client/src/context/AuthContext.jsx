@@ -83,6 +83,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (googleData) => {
+    try {
+      const res = await api.post('/auth/google', googleData);
+      const { user: userData, token: jwtToken } = res.data;
+
+      setUser(userData);
+      setToken(jwtToken);
+      localStorage.setItem('invoicehub_user', JSON.stringify(userData));
+      localStorage.setItem('invoicehub_token', jwtToken);
+
+      toast.success(`Welcome back, ${userData.name}!`);
+      return userData;
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || 'Google authentication failed.';
+      toast.error(msg);
+      throw err;
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post('/auth/logout');
@@ -117,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === 'admin',
     login,
     register,
+    loginWithGoogle,
     logout,
     refreshUser
   };

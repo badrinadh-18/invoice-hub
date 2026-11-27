@@ -180,39 +180,49 @@ export const forgotPassword = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
 
-    // Invalidate existing unused reset tokens for this user
-    if (user) {
-      await PasswordReset.updateMany(
-        { userId: user._id, used: false },
-        { $set: { used: true } }
-      );
-
-      const plainToken = crypto.randomBytes(32).toString('hex');
-      const tokenHash = hashToken(plainToken);
-      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour validity
-
-      await PasswordReset.create({
-        userId: user._id,
-        tokenHash,
-        expiresAt,
-        used: false
+    // Verify if email is in our users list
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'No account found with this email address. Please check the spelling or create an account.'
+        }
       });
+    }
 
-      // Resolve base frontend URL
-      let frontendBase = frontendUrl || req.headers.origin || process.env.FRONTEND_URL;
-      if (!frontendBase && req.headers.referer) {
-        try {
-          const parsed = new URL(req.headers.referer);
-          frontendBase = parsed.origin;
-        } catch (e) {}
-      }
-      if (!frontendBase || frontendBase.includes('localhost:5001')) {
-        frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
-      }
+    // Invalidate existing unused reset tokens for this user
+    await PasswordReset.updateMany(
+      { userId: user._id, used: false },
+      { $set: { used: true } }
+    );
 
-      const resetUrl = `${frontendBase.replace(/\/$/, '')}/reset-password/${plainToken}`;
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(plainToken);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour validity
 
-      const html = `
+    await PasswordReset.create({
+      userId: user._id,
+      tokenHash,
+      expiresAt,
+      used: false
+    });
+
+    // Resolve base frontend URL
+    let frontendBase = frontendUrl || req.headers.origin || process.env.FRONTEND_URL;
+    if (!frontendBase && req.headers.referer) {
+      try {
+        const parsed = new URL(req.headers.referer);
+        frontendBase = parsed.origin;
+      } catch (e) {}
+    }
+    if (!frontendBase || frontendBase.includes('localhost:5001')) {
+      frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+    }
+
+    const resetUrl = `${frontendBase.replace(/\/$/, '')}/reset-password/${plainToken}`;
+
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -250,28 +260,125 @@ export const forgotPassword = async (req, res) => {
   </table>
 </body>
 </html>
-      `;
+    `;
 
-      try {
-        await sendEmail(user.email, 'Reset Your InvoiceHub Password', html);
-      } catch (mailErr) {
-        console.error('Email dispatch error:', mailErr);
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: `A password reset link has been sent to ${user.email}. Please check your inbox or spam folder.`,
-        resetUrl
-      });
+    try {
+      await sendEmail(user.email, 'Reset Your InvoiceHub Password', html);
+    } catch (mailErr) {
+      console.error('Email dispatch error:', mailErr);
     }
 
+    // Securely return success without exposing resetUrl on the screen
     return res.status(200).json({
       success: true,
-      message: 'If an account exists with this email address, a password reset link has been dispatched.'
+      message: `A secure password reset link has been sent to ${user.email}. Please check your email inbox to change your password.`
     });
   } catch (error) {
     console.error('forgotPassword error:', error);
     return res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
+  }
+};
+
+export const googleAuth = async (req, res, next) => {
+  try {
+    const { credential, email: inputEmail, name: inputName, googleId: inputGoogleId, avatar: inputAvatar } = req.body;
+
+    let email = inputEmail;
+    let name = inputName;
+    let googleId = inputGoogleId;
+    let avatar = inputAvatar;
+
+    // Decode Google JWT if credential token is supplied
+    if (credential) {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+          if (payload.email) {
+            email = payload.email;
+            name = payload.name || name;
+            googleId = payload.sub || googleId;
+            avatar = payload.picture || avatar;
+          }
+        }
+      } catch (parseErr) {
+        console.warn('Could not decode Google token payload:', parseErr);
+      }
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        error: { code: 'INVALID_GOOGLE_AUTH', message: 'Valid Google / Gmail address is required.' }
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (user) {
+      // If user exists, connect Google ID if missing
+      if (!user.googleId && googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        if (avatar && !user.avatar) user.avatar = avatar;
+        await user.save();
+      }
+
+      if (user.status === 'suspended') {
+        return res.status(403).json({
+          error: { code: 'ACCOUNT_SUSPENDED', message: 'Your account is suspended. Please contact administrator support.' }
+        });
+      }
+
+      if (user.status === 'inactive') {
+        return res.status(403).json({
+          error: { code: 'ACCOUNT_INACTIVE', message: 'Your account is inactive. Please contact support.' }
+        });
+      }
+
+      await logAuditEvent({
+        actorId: user._id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: 'USER_LOGGED_IN_GOOGLE',
+        targetType: 'User',
+        targetId: user._id,
+        ip: req.ip,
+      });
+
+      return sendTokenResponse(user, 200, res);
+    }
+
+    // User does not exist: Automatically register using Gmail
+    const randomPass = crypto.randomBytes(32).toString('hex');
+    const passwordHash = await User.hashPassword(randomPass);
+
+    user = await User.create({
+      name: name || normalizedEmail.split('@')[0],
+      email: normalizedEmail,
+      passwordHash,
+      googleId,
+      avatar,
+      authProvider: 'google',
+      role: 'user',
+      status: 'active'
+    });
+
+    await logAuditEvent({
+      actorId: user._id,
+      actorEmail: user.email,
+      actorRole: user.role,
+      action: 'USER_REGISTERED_GOOGLE',
+      targetType: 'User',
+      targetId: user._id,
+      ip: req.ip,
+    });
+
+    return sendTokenResponse(user, 201, res);
+  } catch (error) {
+    next(error);
   }
 };
 

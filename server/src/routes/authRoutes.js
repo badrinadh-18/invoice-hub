@@ -7,7 +7,8 @@ import {
   forgotPassword,
   validateResetToken,
   resetPassword,
-  changePassword
+  changePassword,
+  googleAuth
 } from '../controllers/authController.js';
 import rateLimit from 'express-rate-limit';
 import { authenticate } from '../middleware/auth.js';
@@ -23,6 +24,7 @@ const router = express.Router();
 
 router.post('/register', validateRequest(registerSchema), register);
 router.post('/login', validateRequest(loginSchema), login);
+router.post('/google', googleAuth);
 router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Receipt, CheckCircle, ExternalLink, ArrowRight } from 'lucide-react';
+import { Mail, ArrowLeft, Receipt, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [responseMsg, setResponseMsg] = useState('');
-  const [resetUrl, setResetUrl] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,16 +16,15 @@ export default function ForgotPassword() {
 
     try {
       setLoading(true);
+      setErrorMsg('');
       const res = await api.post('/auth/forgot-password', {
-        email,
+        email: email.trim(),
         frontendUrl: window.location.origin
       });
-      setResponseMsg(res.data.message || 'Password reset link sent.');
-      if (res.data.resetUrl) {
-        setResetUrl(res.data.resetUrl);
-      }
+      setSuccessMsg(res.data.message || 'A secure password reset link has been dispatched to your email inbox.');
     } catch (err) {
-      setResponseMsg(err.response?.data?.message || 'An error occurred while requesting password reset.');
+      const errText = err.response?.data?.error?.message || err.response?.data?.message || 'No registered account found with this email address.';
+      setErrorMsg(errText);
     } finally {
       setLoading(false);
     }
@@ -52,32 +51,30 @@ export default function ForgotPassword() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <div className="bg-white dark:bg-slate-900 py-8 px-6 sm:px-10 shadow-sm border border-slate-200/80 dark:border-slate-800 rounded-2xl">
-          {responseMsg ? (
+          {errorMsg && (
+            <div className="mb-5 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs sm:text-sm flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+              <div>
+                <p className="font-semibold text-rose-900 dark:text-rose-100">User Not Found</p>
+                <p className="mt-0.5 leading-relaxed">{errorMsg}</p>
+              </div>
+            </div>
+          )}
+
+          {successMsg ? (
             <div className="space-y-5">
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-sm space-y-2">
                 <div className="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300">
                   <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  Reset Link Dispatched
+                  Password Reset Email Sent
                 </div>
                 <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                  {responseMsg}
+                  {successMsg}
                 </p>
-              </div>
-
-              {resetUrl && (
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Quick Reset Link:
-                  </p>
-                  <a
-                    href={resetUrl}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-700 dark:text-brand-400 hover:underline break-all"
-                  >
-                    <span>Click here to open Password Reset page</span>
-                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                  </a>
+                <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                  🔒 For your security, the reset link is never displayed on screen. Please check your inbox and spam/junk folder. The link is valid for 60 minutes.
                 </div>
-              )}
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Link to="/login" className="flex-1">
@@ -86,8 +83,8 @@ export default function ForgotPassword() {
                     Back to Sign In
                   </Button>
                 </Link>
-                <Button variant="primary" className="flex-1" onClick={handleSubmit} loading={loading}>
-                  Resend Link
+                <Button variant="primary" className="flex-1" onClick={() => { setSuccessMsg(''); setErrorMsg(''); }} loading={loading}>
+                  Request Again
                 </Button>
               </div>
             </div>
@@ -95,7 +92,7 @@ export default function ForgotPassword() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                  Email Address
+                  Registered Email Address
                 </label>
                 <div className="relative rounded-lg shadow-xs">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -113,8 +110,8 @@ export default function ForgotPassword() {
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400">
-                <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Secure Recovery</p>
-                We will send a unique, time-sensitive link valid for 60 minutes. Click the link in the email to set your new password.
+                <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Strict Security Protocol</p>
+                We will check if your email exists in our system. If verified, a secure reset link valid for 60 minutes will be delivered directly to your email inbox only.
               </div>
 
               <Button

@@ -4,7 +4,7 @@ import { User } from '../models/User.js';
 import { PasswordReset, hashToken } from '../models/PasswordReset.js';
 import { config } from '../config/env.js';
 import { logAuditEvent } from '../services/auditService.js';
-import { sendEmail } from '../services/emailService.js';
+import { sendEmail, isSmtpConfigured } from '../services/emailService.js';
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, config.jwtSecret, {
@@ -262,17 +262,36 @@ export const forgotPassword = async (req, res) => {
 </html>
     `;
 
-    try {
-      await sendEmail(user.email, 'Reset Your InvoiceHub Password', html);
-    } catch (mailErr) {
-      console.error('Email dispatch error:', mailErr);
-    }
+    const smtpReady = isSmtpConfigured();
 
-    // Securely return success without exposing resetUrl on the screen
-    return res.status(200).json({
-      success: true,
-      message: `A secure password reset link has been sent to ${user.email}. Please check your email inbox to change your password.`
-    });
+    if (smtpReady) {
+      try {
+        await sendEmail(user.email, 'Reset Your InvoiceHub Password', html);
+        return res.status(200).json({
+          success: true,
+          smtpConfigured: true,
+          message: `A secure password reset link has been dispatched to ${user.email}. Please check your email inbox to change your password.`
+        });
+      } catch (mailErr) {
+        console.error('Email dispatch error:', mailErr);
+        return res.status(500).json({
+          success: false,
+          error: {
+            code: 'EMAIL_DISPATCH_FAILED',
+            message: `Could not send email to ${user.email} (${mailErr.message || 'SMTP error'}). Please verify your server email credentials.`
+          }
+        });
+      }
+    } else {
+      // SMTP credentials not configured yet on backend
+      console.warn(`[SMTP Notice] Email not sent over the internet because SMTP is not configured. User: ${user.email}, Reset URL: ${resetUrl}`);
+      return res.status(200).json({
+        success: true,
+        smtpConfigured: false,
+        resetUrl,
+        message: `Account verified! However, the SMTP mail server is not yet configured on this backend, so outgoing emails cannot be delivered across the internet.`
+      });
+    }
   } catch (error) {
     console.error('forgotPassword error:', error);
     return res.status(500).json({ success: false, message: 'Failed to process password reset request.' });

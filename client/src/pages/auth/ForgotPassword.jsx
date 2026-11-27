@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Receipt, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Mail, ArrowLeft, Receipt, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, Copy, Check } from 'lucide-react';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [successData, setSuccessData] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,17 +19,25 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
       setErrorMsg('');
+      setSuccessData(null);
       const res = await api.post('/auth/forgot-password', {
         email: email.trim(),
         frontendUrl: window.location.origin
       });
-      setSuccessMsg(res.data.message || 'A secure password reset link has been dispatched to your email inbox.');
+      setSuccessData(res.data);
     } catch (err) {
       const errText = err.response?.data?.error?.message || err.response?.data?.message || 'No registered account found with this email address.';
       setErrorMsg(errText);
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Reset link copied to clipboard!');
+    setTimeout(() => setCopied(false), 3000);
   };
 
   return (
@@ -61,20 +71,64 @@ export default function ForgotPassword() {
             </div>
           )}
 
-          {successMsg ? (
+          {successData ? (
             <div className="space-y-5">
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-sm space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300">
-                  <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  Password Reset Email Sent
+              {successData.smtpConfigured !== false ? (
+                /* SMTP Configured: Email Sent to Inbox */
+                <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-sm space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    Password Reset Email Sent
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                    {successData.message}
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                    🔒 For your security, the reset link is never displayed on screen. Please check your inbox and spam folder. The link is valid for 60 minutes.
+                  </div>
                 </div>
-                <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                  {successMsg}
-                </p>
-                <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
-                  🔒 For your security, the reset link is never displayed on screen. Please check your inbox and spam/junk folder. The link is valid for 60 minutes.
+              ) : (
+                /* SMTP Not Configured: Inform user & provide direct access */
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs sm:text-sm space-y-2">
+                    <div className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                      Email Server (SMTP) Not Configured
+                    </div>
+                    <p className="leading-relaxed">
+                      Your account <strong>{email}</strong> was verified successfully! However, outgoing email delivery (SMTP_USER / SMTP_PASS) is not configured on the backend server yet, so internet emails cannot be delivered.
+                    </p>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-400">
+                      To deliver real emails to inboxes, configure your Gmail App Password in your server environment variables.
+                    </p>
+                  </div>
+
+                  {successData.resetUrl && (
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-3">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Direct Password Reset Link (Setup Mode):
+                      </p>
+                      <div className="flex gap-2">
+                        <a
+                          href={successData.resetUrl}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold shadow-xs transition"
+                        >
+                          <span>Open Password Reset Page</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(successData.resetUrl)}
+                          className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium inline-flex items-center gap-1"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copied ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Link to="/login" className="flex-1">
@@ -83,7 +137,12 @@ export default function ForgotPassword() {
                     Back to Sign In
                   </Button>
                 </Link>
-                <Button variant="primary" className="flex-1" onClick={() => { setSuccessMsg(''); setErrorMsg(''); }} loading={loading}>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => { setSuccessData(null); setErrorMsg(''); }}
+                  loading={loading}
+                >
                   Request Again
                 </Button>
               </div>
@@ -111,7 +170,7 @@ export default function ForgotPassword() {
 
               <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400">
                 <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Strict Security Protocol</p>
-                We will check if your email exists in our system. If verified, a secure reset link valid for 60 minutes will be delivered directly to your email inbox only.
+                We will check if your email exists in our system. If verified, a secure reset link valid for 60 minutes will be generated.
               </div>
 
               <Button

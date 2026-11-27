@@ -1,6 +1,14 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/env.js';
 
+export const isSmtpConfigured = () => {
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  const service = process.env.SMTP_SERVICE; // e.g. 'gmail'
+  const host = process.env.SMTP_HOST;
+  return Boolean(user && pass && (service || host));
+};
+
 export const getTransporter = () => {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;

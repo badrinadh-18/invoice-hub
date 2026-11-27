@@ -1,13 +1,26 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, Eye, EyeOff, ArrowRight, ArrowLeft, KeyRound } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/common/Button';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem('invoicehub_remembered_admin_email') || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    try {
+      return Boolean(localStorage.getItem('invoicehub_remembered_admin_email'));
+    } catch {
+      return false;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -24,7 +37,7 @@ export default function AdminLogin() {
     try {
       setLoading(true);
       setErrorMsg('');
-      const userData = await login(email, password);
+      const userData = await login(email.trim(), password);
 
       // Verify that the account has administrative privileges
       if (userData.role !== 'admin') {
@@ -33,18 +46,23 @@ export default function AdminLogin() {
         return;
       }
 
+      // Handle Remember this device
+      try {
+        if (rememberMe) {
+          localStorage.setItem('invoicehub_remembered_admin_email', email.trim());
+        } else {
+          localStorage.removeItem('invoicehub_remembered_admin_email');
+        }
+      } catch (e) {
+        console.warn('Could not access localStorage for remember device', e);
+      }
+
       navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       setErrorMsg(err.response?.data?.error?.message || 'Administrator sign-in failed. Please verify credentials.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemoAdmin = () => {
-    setEmail('admin@invoicehub.local');
-    setPassword('Admin@InvoiceHub2026');
-    setErrorMsg('');
   };
 
   return (
@@ -118,20 +136,17 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            {/* Quick Demo Credentials Autofill */}
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-semibold text-slate-800 dark:text-slate-200 block">Default Admin Account</span>
-                <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">admin@invoicehub.local</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillDemoAdmin}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-200 text-xs transition inline-flex items-center gap-1"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                Auto-fill
-              </button>
+            {/* Remember This Device Checkbox */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-brand-700 focus:ring-brand-700"
+                />
+                <span className="text-xs text-slate-600 dark:text-slate-400">Remember this device</span>
+              </label>
             </div>
 
             <Button

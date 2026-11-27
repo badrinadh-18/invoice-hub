@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Eye, ExternalLink, Trash2, Building, Receipt, Users, Shield, Calendar, Mail, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 
 export default function AdminUsers() {
@@ -22,6 +22,15 @@ export default function AdminUsers() {
   const [newStatus, setNewStatus] = useState('active');
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // View & Access Modal
+  const [viewingUser, setViewingUser] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [accessingWorkspace, setAccessingWorkspace] = useState(false);
+
+  // Admin Delete Modal
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -71,16 +80,69 @@ export default function AdminUsers() {
     }
   };
 
+  const handleViewUser = async (user) => {
+    setViewingUser(user);
+    setLoadingDetails(true);
+    try {
+      const res = await api.get(`/admin/users/${user.id}`);
+      setViewingUser(res.data.data);
+    } catch (err) {
+      toast.error('Failed to load detailed profile.');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleAccessWorkspace = async (userId) => {
+    try {
+      setAccessingWorkspace(true);
+      const res = await api.post(`/admin/users/${userId}/access`);
+      const { token, user } = res.data;
+
+      // Save token and session into storage to impersonate / access workspace
+      localStorage.setItem('invoicehub_token', token);
+      localStorage.setItem('invoicehub_user', JSON.stringify(user));
+      toast.success(`Accessing workspace as ${user.name}...`);
+
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to access user workspace.');
+      setAccessingWorkspace(false);
+    }
+  };
+
+  const handleDeleteUser = async (e) => {
+    e.preventDefault();
+    if (!deletingUser) return;
+
+    try {
+      setDeletingLoading(true);
+      await api.delete(`/admin/users/${deletingUser.id}`);
+      toast.success(`User account ${deletingUser.email} deleted.`);
+      setDeletingUser(null);
+      if (viewingUser?.id === deletingUser.id) {
+        setViewingUser(null);
+      }
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to delete user.');
+    } finally {
+      setDeletingLoading(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
       case 'inactive':
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
       case 'suspended':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
+        return 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
     }
   };
 
@@ -93,7 +155,7 @@ export default function AdminUsers() {
             User Accounts & Access Control
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Administer registered tenant accounts, review roles, and manage access statuses ({totalCount} total).
+            Administer registered tenant accounts, inspect business profiles, and manage access statuses ({totalCount} total).
           </p>
         </div>
       </div>
@@ -111,11 +173,11 @@ export default function AdminUsers() {
                 setPage(1);
               }}
               placeholder="Search user by full name or email address..."
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {['all', 'active', 'inactive', 'suspended'].map((s) => (
               <button
                 key={s}
@@ -123,10 +185,10 @@ export default function AdminUsers() {
                   setStatusFilter(s);
                   setPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shrink-0 ${
                   statusFilter === s
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {s}
@@ -145,39 +207,46 @@ export default function AdminUsers() {
         ) : users.length > 0 ? (
           <div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-700">
-                <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="px-5 py-3">User Details</th>
                     <th className="px-5 py-3">Role</th>
                     <th className="px-5 py-3">Invoices</th>
                     <th className="px-5 py-3">Joined Date</th>
                     <th className="px-5 py-3 text-center">Status</th>
-                    <th className="px-5 py-3 text-right">Account Actions</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/80 transition">
+                    <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
                       <td className="px-5 py-3.5">
-                        <div className="font-semibold text-slate-900">{u.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{u.email}</div>
+                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>{u.name}</span>
+                          {u.role === 'admin' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">{u.email}</div>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase ${
                             u.role === 'admin'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-slate-100 text-slate-700'
+                              ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           {u.role}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-600 font-medium">
+                      <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 font-medium">
                         {u.invoiceCount || 0}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 text-xs whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
                         {formatDate(u.createdAt)}
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
@@ -191,10 +260,20 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-5 py-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* View & Access Details Button */}
+                          <button
+                            onClick={() => handleViewUser(u)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/60 transition inline-flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View & Access</span>
+                          </button>
+
+                          {/* Quick Status Toggles */}
                           {u.status !== 'active' && (
                             <button
                               onClick={() => handleOpenStatusModal(u, 'active')}
-                              className="px-2.5 py-1 text-xs font-medium rounded border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition"
+                              className="px-2 py-1 text-xs font-medium rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition"
                             >
                               Activate
                             </button>
@@ -202,7 +281,7 @@ export default function AdminUsers() {
                           {u.status === 'active' && (
                             <button
                               onClick={() => handleOpenStatusModal(u, 'inactive')}
-                              className="px-2.5 py-1 text-xs font-medium rounded border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
+                              className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                             >
                               Deactivate
                             </button>
@@ -210,7 +289,7 @@ export default function AdminUsers() {
                           {u.status !== 'suspended' && (
                             <button
                               onClick={() => handleOpenStatusModal(u, 'suspended')}
-                              className="px-2.5 py-1 text-xs font-medium rounded border border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100 transition"
+                              className="px-2 py-1 text-xs font-medium rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition"
                             >
                               Suspend
                             </button>
@@ -225,7 +304,7 @@ export default function AdminUsers() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   Page {page} of {totalPages}
                 </span>
@@ -257,6 +336,144 @@ export default function AdminUsers() {
         )}
       </Card>
 
+      {/* Comprehensive View & Access User Modal */}
+      <Modal
+        isOpen={!!viewingUser}
+        onClose={() => setViewingUser(null)}
+        title={viewingUser ? `User Profile: ${viewingUser.name}` : 'User Profile'}
+        subtitle={viewingUser?.email || ''}
+        maxWidth="max-w-2xl"
+      >
+        {loadingDetails ? (
+          <div className="py-8">
+            <LoadingSpinner text="Retrieving detailed user records..." />
+          </div>
+        ) : viewingUser ? (
+          <div className="space-y-5">
+            {/* User Overview Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Account Role</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white capitalize">{viewingUser.role}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Status</span>
+                <span className={`text-xs font-bold uppercase inline-block mt-0.5 px-2 py-0.5 rounded border ${getStatusBadge(viewingUser.status)}`}>
+                  {viewingUser.status}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Invoices</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">{viewingUser.stats?.invoiceCount || 0}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Customers</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">{viewingUser.stats?.customerCount || 0}</span>
+              </div>
+            </div>
+
+            {/* Business Profile Details */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Building className="w-4 h-4 text-brand-600" />
+                Business Organization Details
+              </h4>
+              {viewingUser.businessProfile ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-600 dark:text-slate-300 pt-1">
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Company Name: </span>
+                    {viewingUser.businessProfile.businessName || '—'}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Billing Email: </span>
+                    {viewingUser.businessProfile.email || viewingUser.email}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Phone: </span>
+                    {viewingUser.businessProfile.phone || '—'}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Tax ID / GSTIN: </span>
+                    {viewingUser.businessProfile.taxId || '—'}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Address: </span>
+                    {[viewingUser.businessProfile.address, viewingUser.businessProfile.city, viewingUser.businessProfile.state, viewingUser.businessProfile.country].filter(Boolean).join(', ') || '—'}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 italic pt-1">No custom business profile configured yet.</p>
+              )}
+            </div>
+
+            {/* Financial Summary */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200">
+              <span className="text-xs font-semibold">Total Invoiced Volume:</span>
+              <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
+                {formatCurrency(viewingUser.stats?.totalInvoiced || 0)}
+              </span>
+            </div>
+
+            {/* Recent Invoices List */}
+            {viewingUser.recentInvoices && viewingUser.recentInvoices.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Receipt className="w-4 h-4 text-slate-500" />
+                  Recent Invoices
+                </h4>
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+                  {viewingUser.recentInvoices.map((inv) => (
+                    <div key={inv._id} className="p-2.5 px-3 flex items-center justify-between text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <div>
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">{inv.invoiceNumber}</span>
+                        <span className="text-slate-500 ml-2">({inv.customerSnapshot?.name || 'Customer'})</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(inv.grandTotal)}</span>
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {inv.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons in Modal */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 justify-between">
+              <button
+                type="button"
+                onClick={() => setDeletingUser(viewingUser)}
+                className="px-3 py-2 text-xs font-semibold rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition inline-flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Account
+              </button>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setViewingUser(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  icon={ExternalLink}
+                  loading={accessingWorkspace}
+                  onClick={() => handleAccessWorkspace(viewingUser.id)}
+                >
+                  Access Workspace
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
       {/* Status Modification Modal */}
       <Modal
         isOpen={!!selectedUser}
@@ -266,15 +483,15 @@ export default function AdminUsers() {
         maxWidth="max-w-md"
       >
         <form onSubmit={handleConfirmStatusChange} className="space-y-4">
-          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs sm:text-sm">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs sm:text-sm">
             <span className="font-semibold block mb-1">Administrative Audit Action</span>
             You are changing the account status of <span className="font-bold">{selectedUser?.email}</span> from{' '}
             <span className="uppercase font-semibold">{selectedUser?.status}</span> to{' '}
-            <span className="uppercase font-semibold text-brand-800">{newStatus}</span>.
+            <span className="uppercase font-semibold text-brand-800 dark:text-brand-300">{newStatus}</span>.
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
               Audit Reason (Optional)
             </label>
             <input
@@ -282,7 +499,7 @@ export default function AdminUsers() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Terms violation or user request"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-700 focus:ring-1 focus:ring-brand-700 focus:outline-none"
             />
           </div>
 
@@ -300,6 +517,45 @@ export default function AdminUsers() {
               loading={submitting}
             >
               Confirm Status Change
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Admin Delete User Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingUser}
+        onClose={() => setDeletingUser(null)}
+        title={`Delete User: ${deletingUser?.name}`}
+        subtitle={deletingUser?.email}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleDeleteUser} className="space-y-4">
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs sm:text-sm space-y-1.5">
+            <p className="font-bold flex items-center gap-1 text-rose-900 dark:text-rose-100">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              Permanent Administrative Deletion
+            </p>
+            <p className="text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
+              This will permanently delete <strong className="font-semibold">{deletingUser?.email}</strong> and completely erase all their invoices, customers, and business profiles.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setDeletingUser(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              icon={Trash2}
+              loading={deletingLoading}
+            >
+              Delete User
             </Button>
           </div>
         </form>

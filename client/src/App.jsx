@@ -30,6 +30,7 @@ const InvoiceEditor = lazy(() => import('./pages/user/InvoiceEditor'));
 const InvoiceDetails = lazy(() => import('./pages/user/InvoiceDetails'));
 
 // Admin Pages
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'));
@@ -185,6 +186,8 @@ export default function App() {
               />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
             </Route>
 
             {/* User Workspace Routes */}

@@ -1,8 +1,14 @@
+import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { Invoice } from '../models/Invoice.js';
+import { Customer } from '../models/Customer.js';
+import { BusinessProfile } from '../models/BusinessProfile.js';
+import { Payment } from '../models/Payment.js';
+import { PasswordReset } from '../models/PasswordReset.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { logAuditEvent } from '../services/auditService.js';
 import { round2 } from '../utils/calculationEngine.js';
+import { config } from '../config/env.js';
 
 export const getAdminDashboard = async (req, res, next) => {
   try {
@@ -132,11 +138,18 @@ export const getAdminUserById = async (req, res, next) => {
       });
     }
 
+    const businessProfile = await BusinessProfile.findOne({ ownerId: user._id });
+    const customerCount = await Customer.countDocuments({ ownerId: user._id });
     const invoiceCount = await Invoice.countDocuments({ ownerId: user._id });
     const aggregateInvoiced = await Invoice.aggregate([
       { $match: { ownerId: user._id, lifecycleState: { $ne: 'void' } } },
       { $group: { _id: null, total: { $sum: '$grandTotal' } } }
     ]);
+
+    const recentInvoices = await Invoice.find({ ownerId: user._id })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('invoiceNumber customerSnapshot grandTotal status balanceDue createdAt');
 
     res.status(200).json({
       success: true,
@@ -146,12 +159,111 @@ export const getAdminUserById = async (req, res, next) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        authProvider: user.authProvider || 'local',
         createdAt: user.createdAt,
+        businessProfile,
         stats: {
           invoiceCount,
+          customerCount,
           totalInvoiced: round2(aggregateInvoiced[0]?.total || 0)
-        }
+        },
+        recentInvoices
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const accessUserAccount = async (req, res, next) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: { code: 'USER_NOT_FOUND', message: 'User account not found.' }
+      });
+    }
+
+    // Generate authenticated JWT for the target user session
+    const token = jwt.sign(
+      { id: targetUser._id, role: targetUser.role },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+
+    await logAuditEvent({
+      actorId: req.user._id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      action: 'ADMIN_ACCESSED_USER_WORKSPACE',
+      targetType: 'User',
+      targetId: targetUser._id,
+      reason: `Administrator accessed workspace session for user ${targetUser.email}`,
+      ip: req.ip
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Access granted for ${targetUser.name}`,
+      token,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        status: targetUser.status
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUserByAdmin = async (req, res, next) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: { code: 'USER_NOT_FOUND', message: 'User account not found.' }
+      });
+    }
+
+    if (targetUser.role === 'admin') {
+      const activeAdminsCount = await User.countDocuments({ role: 'admin', status: 'active' });
+      if (activeAdminsCount <= 1) {
+        return res.status(400).json({
+          error: {
+            code: 'CANNOT_DELETE_LAST_ADMIN',
+            message: 'Cannot delete the only active administrator account.'
+          }
+        });
+      }
+    }
+
+    // Cascade delete user data
+    await Promise.all([
+      Invoice.deleteMany({ ownerId: targetUser._id }),
+      Customer.deleteMany({ ownerId: targetUser._id }),
+      BusinessProfile.deleteMany({ ownerId: targetUser._id }),
+      Payment.deleteMany({ ownerId: targetUser._id }),
+      PasswordReset.deleteMany({ userId: targetUser._id }),
+      User.findByIdAndDelete(targetUser._id)
+    ]);
+
+    await logAuditEvent({
+      actorId: req.user._id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      action: 'ADMIN_DELETED_USER_ACCOUNT',
+      targetType: 'User',
+      targetId: targetUser._id,
+      reason: `Admin deleted user ${targetUser.email}`,
+      ip: req.ip
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User account ${targetUser.email} has been permanently deleted.`
     });
   } catch (error) {
     next(error);

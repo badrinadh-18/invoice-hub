@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Info, Sun, Moon, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Save, Info, Sun, Moon, Lock, KeyRound, Eye, EyeOff, AlertTriangle, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function BusinessProfile() {
   const { theme, isDark, setTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -20,6 +25,12 @@ export default function BusinessProfile() {
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  // Account deletion state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -121,6 +132,27 @@ export default function BusinessProfile() {
       toast.error(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to update password.');
     } finally {
       setUpdatingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    try {
+      setDeletingAccount(true);
+      await api.delete('/users/me', {
+        data: {
+          password: deletePassword,
+          confirmation: deleteConfirmation
+        }
+      });
+      toast.success('Your account has been permanently deleted.');
+      setShowDeleteModal(false);
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to delete account.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -512,6 +544,110 @@ export default function BusinessProfile() {
           </div>
         </form>
       </Card>
+
+      {/* Danger Zone: Delete Account */}
+      <Card
+        title="Danger Zone"
+        subtitle="Permanently delete your account and all associated records"
+        className="border-rose-200 dark:border-rose-900/60"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                Delete Account & Data
+              </h4>
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">
+                Permanently deletes your business profile, customers, invoice history, and login account. This action cannot be reversed.
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            icon={Trash2}
+            onClick={() => {
+              setDeletePassword('');
+              setDeleteConfirmation('');
+              setShowDeleteModal(true);
+            }}
+            className="shrink-0 w-full sm:w-auto"
+          >
+            Delete Account
+          </Button>
+        </div>
+      </Card>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Account Confirmation"
+        subtitle="Permanent & Irreversible"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleDeleteAccount} className="space-y-4">
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs sm:text-sm space-y-1.5">
+            <p className="font-bold flex items-center gap-1.5 text-rose-900 dark:text-rose-100">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              Warning: All data will be permanently erased
+            </p>
+            <p className="text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
+              This will permanently delete your account (<strong className="font-semibold">{user?.email}</strong>), business profile, customers list, and all issued invoices.
+            </p>
+          </div>
+
+          {user?.authProvider === 'google' ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Type <span className="font-mono text-rose-600 font-bold">DELETE</span> to confirm *
+              </label>
+              <input
+                type="text"
+                required
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                placeholder="DELETE"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-rose-600 focus:ring-1 focus:ring-rose-600 focus:outline-none"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Confirm Your Current Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter password to confirm"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-rose-600 focus:ring-1 focus:ring-rose-600 focus:outline-none"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              loading={deletingAccount}
+              icon={Trash2}
+            >
+              Permanently Delete
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

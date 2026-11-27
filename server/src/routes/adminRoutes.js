@@ -3,6 +3,8 @@ import {
   getAdminDashboard,
   getAdminUsers,
   getAdminUserById,
+  accessUserAccount,
+  deleteUserByAdmin,
   updateUserStatus,
   getAuditLogs
 } from '../controllers/adminController.js';
@@ -19,6 +21,8 @@ router.use(authenticate, requireRole('admin'));
 router.get('/dashboard', getAdminDashboard);
 router.get('/users', getAdminUsers);
 router.get('/users/:id', getAdminUserById);
+router.post('/users/:id/access', accessUserAccount);
+router.delete('/users/:id', deleteUserByAdmin);
 router.patch('/users/:id/status', validateRequest(userStatusSchema), updateUserStatus);
 router.get('/audit-logs', getAuditLogs);
 

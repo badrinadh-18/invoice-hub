@@ -196,6 +196,16 @@ export default function Login() {
               Sign In to InvoiceHub
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
+
+            <div className="text-center pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Link
+                to="/admin/login"
+                className="text-xs font-semibold text-slate-500 hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-400 inline-flex items-center gap-1 transition"
+              >
+                <span>System Administrator? Access Admin Portal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </form>
         </div>
       </div>

@@ -3,6 +3,8 @@ import {
   getAdminDashboard,
   getAdminUsers,
   getAdminUserById,
+  createAdminUser,
+  updateUserRole,
   accessUserAccount,
   deleteUserByAdmin,
   updateUserStatus,
@@ -20,7 +22,9 @@ router.use(authenticate, requireRole('admin'));
 
 router.get('/dashboard', getAdminDashboard);
 router.get('/users', getAdminUsers);
+router.post('/users', createAdminUser);
 router.get('/users/:id', getAdminUserById);
+router.patch('/users/:id/role', updateUserRole);
 router.post('/users/:id/access', accessUserAccount);
 router.delete('/users/:id', deleteUserByAdmin);
 router.patch('/users/:id/status', validateRequest(userStatusSchema), updateUserStatus);

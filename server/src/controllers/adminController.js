@@ -270,6 +270,124 @@ export const deleteUserByAdmin = async (req, res, next) => {
   }
 };
 
+export const createAdminUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role = 'admin' } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        error: { code: 'MISSING_FIELDS', message: 'Name, email, and password are required.' }
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: { code: 'INVALID_PASSWORD', message: 'Password must be at least 6 characters long.' }
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(409).json({
+        error: { code: 'USER_EXISTS', message: 'An account with this email address already exists.' }
+      });
+    }
+
+    const passwordHash = await User.hashPassword(password);
+    const targetRole = role === 'admin' ? 'admin' : 'user';
+
+    const newUser = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      role: targetRole,
+      status: 'active',
+      authProvider: 'local'
+    });
+
+    await logAuditEvent({
+      actorId: req.user._id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      action: 'ADMIN_CREATED_USER',
+      targetType: 'User',
+      targetId: newUser._id,
+      reason: `Admin created new ${targetRole} account for ${normalizedEmail}`,
+      ip: req.ip
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `New ${targetRole} account created successfully.`,
+      data: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        status: newUser.status
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    if (!role || !['admin', 'user'].includes(role)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_ROLE', message: 'Role must be either "admin" or "user".' }
+      });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: { code: 'USER_NOT_FOUND', message: 'User account not found.' }
+      });
+    }
+
+    // Safety guard: prevent demoting the last active administrator
+    if (targetUser.role === 'admin' && role === 'user') {
+      const activeAdminsCount = await User.countDocuments({ role: 'admin', status: 'active' });
+      if (activeAdminsCount <= 1) {
+        return res.status(400).json({
+          error: { code: 'CANNOT_DEMOTE_LAST_ADMIN', message: 'Cannot demote the only active administrator account.' }
+        });
+      }
+    }
+
+    const previousRole = targetUser.role;
+    targetUser.role = role;
+    await targetUser.save();
+
+    await logAuditEvent({
+      actorId: req.user._id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      action: 'USER_ROLE_UPDATED',
+      targetType: 'User',
+      targetId: targetUser._id,
+      reason: `Role changed from ${previousRole} to ${role}`,
+      ip: req.ip
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User role updated to ${role}.`,
+      data: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateUserStatus = async (req, res, next) => {
   try {
     const { status, reason } = req.body;

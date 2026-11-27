@@ -1,9 +1,42 @@
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { config } from './config/env.js';
+import { User } from './models/User.js';
+
+const ensureAdminExists = async () => {
+  try {
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+      const adminEmail = (process.env.ADMIN_EMAIL || 'admin@invoicehub.local').toLowerCase();
+      const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@InvoiceHub2026';
+      const adminName = process.env.ADMIN_NAME || 'System Administrator';
+
+      let existing = await User.findOne({ email: adminEmail });
+      if (existing) {
+        existing.role = 'admin';
+        existing.status = 'active';
+        await existing.save();
+        console.log(`[AutoProvision] Promoted existing account to Admin: ${adminEmail}`);
+      } else {
+        const passwordHash = await User.hashPassword(adminPassword);
+        await User.create({
+          name: adminName,
+          email: adminEmail,
+          passwordHash,
+          role: 'admin',
+          status: 'active'
+        });
+        console.log(`[AutoProvision] Successfully provisioned default Administrator: ${adminEmail}`);
+      }
+    }
+  } catch (err) {
+    console.warn(`[AutoProvision] Admin verification notice:`, err.message);
+  }
+};
 
 const startServer = async () => {
   await connectDB();
+  await ensureAdminExists();
 
   const server = app.listen(config.port, () => {
     console.log(`[InvoiceHub Server] Running on http://localhost:${config.port}`);

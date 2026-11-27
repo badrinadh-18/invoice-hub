@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, ExternalLink, Trash2, Building, Receipt, Users, Shield, Calendar, Mail, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Search, Eye, ExternalLink, Trash2, Building, Receipt, Users, Shield, Calendar, Mail, AlertTriangle, CheckCircle, RefreshCw, UserPlus, ShieldAlert, KeyRound } from 'lucide-react';
 import api from '../../services/api';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -31,6 +31,17 @@ export default function AdminUsers() {
   // Admin Delete Modal
   const [deletingUser, setDeletingUser] = useState(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
+
+  // Create User / Admin Modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'admin'
+  });
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [roleChanging, setRoleChanging] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -133,6 +144,37 @@ export default function AdminUsers() {
     }
   };
 
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      setCreatingUser(true);
+      await api.post('/admin/users', createFormData);
+      toast.success(`${createFormData.role === 'admin' ? 'Administrator' : 'User'} created successfully!`);
+      setShowCreateModal(false);
+      setCreateFormData({ name: '', email: '', password: '', role: 'admin' });
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to create account.');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const handleToggleRole = async (targetUser) => {
+    const newRole = targetUser.role === 'admin' ? 'user' : 'admin';
+    try {
+      setRoleChanging(true);
+      await api.patch(`/admin/users/${targetUser.id || targetUser._id}/role`, { role: newRole });
+      toast.success(`Role updated to ${newRole}.`);
+      setViewingUser((prev) => (prev ? { ...prev, role: newRole } : null));
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to update role.');
+    } finally {
+      setRoleChanging(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
@@ -158,6 +200,15 @@ export default function AdminUsers() {
             Administer registered tenant accounts, inspect business profiles, and manage access statuses ({totalCount} total).
           </p>
         </div>
+        <Button
+          type="button"
+          variant="primary"
+          icon={UserPlus}
+          onClick={() => setShowCreateModal(true)}
+          className="shrink-0"
+        >
+          Create Admin / User
+        </Button>
       </div>
 
       {/* Filter and Search Bar */}
@@ -442,14 +493,29 @@ export default function AdminUsers() {
 
             {/* Action Buttons in Modal */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 justify-between">
-              <button
-                type="button"
-                onClick={() => setDeletingUser(viewingUser)}
-                className="px-3 py-2 text-xs font-semibold rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition inline-flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete Account
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeletingUser(viewingUser)}
+                  className="px-3 py-2 text-xs font-semibold rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  disabled={roleChanging}
+                  onClick={() => handleToggleRole(viewingUser)}
+                  className={`px-3 py-2 text-xs font-semibold rounded-lg transition inline-flex items-center gap-1.5 border ${
+                    viewingUser.role === 'admin'
+                      ? 'border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>{viewingUser.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}</span>
+                </button>
+              </div>
 
               <div className="flex gap-2">
                 <Button
@@ -556,6 +622,109 @@ export default function AdminUsers() {
               loading={deletingLoading}
             >
               Delete User
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Create New Admin / User Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create New Account"
+        subtitle="Provision a new Administrator or Standard Tenant account"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleCreateUser} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Account Role *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCreateFormData((prev) => ({ ...prev, role: 'admin' }))}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  createFormData.role === 'admin'
+                    ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-600" />
+                Administrator
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateFormData((prev) => ({ ...prev, role: 'user' }))}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  createFormData.role === 'user'
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40 text-brand-900 dark:text-brand-200 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-brand-600" />
+                Standard User
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={createFormData.name}
+              onChange={(e) => setCreateFormData((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g. Operations Admin"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              required
+              value={createFormData.email}
+              onChange={(e) => setCreateFormData((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="admin@invoicehub.local"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Password (min. 6 characters) *
+            </label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={createFormData.password}
+              onChange={(e) => setCreateFormData((prev) => ({ ...prev, password: e.target.value }))}
+              placeholder="••••••••••••"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowCreateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={creatingUser}
+            >
+              Create Account
             </Button>
           </div>
         </form>
